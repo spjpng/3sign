@@ -141,8 +141,8 @@ canvas.sig-modal-canvas{display:block;width:100%;height:200px;cursor:crosshair;t
 .settings-sig-thumb .no-sig{font-size:12px;color:#aaa;}
 
 /* ── CLIENT VIEW ── */
-.client-wrap{position:fixed;inset:0;background:var(–bg);z-index:500;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;}
-.client-wrap.active{display:block;}
+.client-wrap{position:fixed;inset:0;background:var(–bg);z-index:500;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;pointer-events:none;}
+.client-wrap.active{display:block;pointer-events:auto;}
 .client-header{background:var(–bg);border-bottom:1px solid var(–border);padding:14px 20px;position:sticky;top:0;z-index:10;}
 .client-body{padding:24px 20px 140px;}
 .client-bottom{position:fixed;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(–bg);border-top:1px solid var(–border);z-index:10;display:none;}.client-wrap.active .client-bottom{display:block;}
@@ -290,24 +290,9 @@ canvas.sig-modal-canvas{display:block;width:100%;height:200px;cursor:crosshair;t
 
 <!-- CLIENT VIEW — completely separate from app -->
 
-<div class="client-wrap" id="clientWrap">
-  <div class="client-header" id="clientHeader">
-    <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);" id="clientLogoEl"></div>
-    <div style="font-size:11px;color:var(--text-muted);margin-top:2px;letter-spacing:1px;" id="clientCatLabel"></div>
-  </div>
-  <div class="client-body" id="clientBody"></div>
-  <div class="client-bottom" id="clientBottom">
-    <button id="clientSendBtn" onclick="doClientShare()" style="width:100%;background:var(--accent);color:#0a0a0a;border:none;border-radius:11px;padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-      Send My Signed Copy
-    </button>
-    <button id="clientDlBtn" class="btn-locked" onclick="doClientDownload()" disabled>
-      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
-      Download My Copy
-    </button>
-    <div class="send-hint" id="clientHint">Sign above, then send to unlock your download</div>
-  </div>
-</div>
+<!-- client view injected by JS when ?sign= detected -->
+
+<div class="client-wrap" id="clientWrap" style="pointer-events:none;"></div>
 
 <!-- SETTINGS -->
 
@@ -723,8 +708,11 @@ if(style===‘full’) logoHtml=`<span style="color:var(--accent)">${name}</span
 else if(style===‘start’) logoHtml=`<span style="color:var(--accent)">${a}${sp}</span><span>${b}</span>`;
 else logoHtml=`<span>${a}${sp}</span><span style="color:var(--accent)">${b}</span>`;
 
-document.getElementById(‘clientLogoEl’).innerHTML=logoHtml;
-document.getElementById(‘clientCatLabel’).textContent=catName.toUpperCase();
+// Build full client view HTML into the empty wrapper
+const wrap=document.getElementById(‘clientWrap’);
+wrap.innerHTML=`<div style="background:var(--bg);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:10;"> <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);">${logoHtml}</div> <div style="font-size:11px;color:var(--text-muted);margin-top:2px;letter-spacing:1px;">${catName.toUpperCase()}</div> </div> <div id="clientBody" style="padding:24px 20px 180px;"></div> <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);z-index:10;"> <button id="clientSendBtn" onclick="doClientShare()" style="width:100%;background:var(--accent);color:#0a0a0a;border:none;border-radius:11px;padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;"> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Send My Signed Copy </button> <button id="clientDlBtn" onclick="doClientDownload()" disabled style="width:100%;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);border-radius:11px;padding:15px;font-family:'DM Sans',sans-serif;font-size:15px;cursor:not-allowed;opacity:0.38;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:8px;"> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download My Copy </button> <div id="clientHint" style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:10px;">Send first to unlock your download</div> </div>`;
+
+// Now populate clientBody
 
 // Build body
 let bodyHtml=`<div class="action-banner"> <div class="action-banner-label">Action Required</div> <div class="action-banner-text">Hi <strong>${clientName}</strong>, please review the details below and sign to complete this agreement.</div> </div> <div class="detail-card"> <div class="detail-row"><span class="detail-row-label">From</span><span class="detail-row-val">${fields.yourName||bizName}</span></div> <div class="detail-row"><span class="detail-row-label">Date</span><span class="detail-row-val">${fmtDate(docDate)}</span></div> ${buildDetailRows(payload)} </div> <div style="margin-bottom:16px;"> <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);font-weight:500;margin-bottom:8px;">Your Signature</div> <div class="sig-container" style="margin-bottom:4px;"> <div class="sig-label-bar"> <span>${clientName||'Client'} Signature</span> <span class="sig-clear" onclick="clearClientCanvas()">Clear</span> </div> <canvas id="clientOnlyCanvas" class="sig-canvas"></canvas> </div> <div id="clientNoSigWarn" style="display:none;font-size:12px;color:#e05c5c;text-align:center;margin-top:6px;">Please add your signature above</div> </div>`;

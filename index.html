@@ -78,9 +78,10 @@
     .done-icon { width: 76px; height: 76px; margin: 0 auto 24px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-dim); color: var(--accent); }
     .done-title { font-family: "DM Serif Display", serif; font-size: 34px; margin-bottom: 10px; }
     .done-sub { margin-bottom: 34px; color: var(--text-muted); line-height: 1.6; }
+    body.modal-open { overflow: hidden; position: fixed; width: 100%; }
     .overlay { position: fixed; inset: 0; z-index: 100; display: none; align-items: flex-end; background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(6px); }
     .overlay.open { display: flex; }
-    .sheet { width: 100%; max-height: 88vh; overflow-y: auto; background: var(--surface); border-radius: 22px 22px 0 0; padding: 20px 20px max(28px, env(safe-area-inset-bottom)); }
+    .sheet { width: 100%; max-height: 88vh; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; background: var(--surface); border-radius: 22px 22px 0 0; padding: 20px 20px max(28px, env(safe-area-inset-bottom)); }
     .sheet-handle { width: 36px; height: 4px; margin: 0 auto 20px; border-radius: 3px; background: var(--border); }
     .sheet-title { font-family: "DM Serif Display", serif; font-size: 24px; margin-bottom: 22px; }
     .settings-section { margin-bottom: 22px; }
@@ -221,6 +222,8 @@
     let clientPayload = null;
     let clientSigData = null;
     let clientPdfDoc = null;
+    let settingsScrollY = 0;
+    const PUBLIC_SHARE_BASE = "https://spjpng.github.io/3sign/";
 
     const DEFAULT_SETTINGS = {
       bizName: "",
@@ -263,6 +266,24 @@
     function todayISO() { return new Date().toISOString().split("T")[0]; }
     function V(id) { const el = document.getElementById(id); return el ? (el.value || "") : ""; }
     function money(v) { return "$" + (parseFloat(v) || 0).toFixed(2); }
+    function shareBaseUrl() {
+      const isLocal = location.protocol === "file:" || ["127.0.0.1", "localhost"].includes(location.hostname);
+      if (isLocal) return PUBLIC_SHARE_BASE;
+      return location.href.split("?")[0].split("#")[0];
+    }
+    function encodePayload(payload) {
+      const json = JSON.stringify(payload);
+      const bytes = new TextEncoder().encode(json);
+      let binary = "";
+      bytes.forEach(byte => { binary += String.fromCharCode(byte); });
+      return btoa(binary).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/g, "");
+    }
+    function decodePayload(data) {
+      const normalized = data.replace(/-/g, "+").replace(/_/g, "/");
+      const padded = normalized + "=".repeat((4 - normalized.length % 4) % 4);
+      const bytes = Uint8Array.from(atob(padded), char => char.charCodeAt(0));
+      return JSON.parse(new TextDecoder().decode(bytes));
+    }
 
     function renderCategories() {
       document.getElementById("categoryGrid").innerHTML = Object.entries(CATS).map(([key, cat]) => `
@@ -324,11 +345,17 @@
 
     function openSettings() {
       loadSettingsUI();
+      settingsScrollY = window.scrollY || 0;
+      document.body.style.top = `-${settingsScrollY}px`;
       document.getElementById("settingsOverlay").classList.add("open");
+      document.body.classList.add("modal-open");
       setTimeout(() => resizeCanvas(document.getElementById("settingsSigCanvas"), S.defaultSigData), 60);
     }
     function closeSettings() {
       document.getElementById("settingsOverlay").classList.remove("open");
+      document.body.classList.remove("modal-open");
+      document.body.style.top = "";
+      window.scrollTo(0, settingsScrollY);
       if (S.bizName) document.getElementById("yourName").value = S.bizName;
     }
     function overlayClickClose(e, id) { if (e.target.id === id) closeSettings(); }
@@ -599,9 +626,8 @@
       }
       const fields = collectFields();
       const payload = { cat: category, fields, lines: collectLines(), yourEmail: S.email, bizName: S.bizName, tagline: S.tagline, accentColor: S.accentColor, bgColor: S.bgColor };
-      const key = Math.random().toString(36).slice(2, 10);
-      localStorage.setItem(`ss_doc_${key}`, JSON.stringify(payload));
-      const url = `${window.location.href.split("?")[0].split("#")[0]}?sign=${key}`;
+      const encoded = encodePayload(payload);
+      const url = `${shareBaseUrl()}?sign=${encoded}`;
       const catName = CATS[category].name;
       const msg = `Hi ${fields.clientName || "there"}, ${fields.yourName || S.bizName || "your contact"} sent you a ${catName} to sign.\n\nTap to open and sign:\n${url}`;
       if (navigator.share) {
@@ -616,14 +642,15 @@
     }
 
     function checkClientMode() {
-      const key = new URLSearchParams(window.location.search).get("sign");
-      if (!key) return false;
-      const raw = localStorage.getItem(`ss_doc_${key}`);
-      if (!raw) {
+      const signData = new URLSearchParams(window.location.search).get("sign");
+      if (!signData) return false;
+      const legacyRaw = localStorage.getItem(`ss_doc_${signData}`);
+      try {
+        clientPayload = legacyRaw ? JSON.parse(legacyRaw) : decodePayload(signData);
+      } catch (e) {
         showClientError();
         return true;
       }
-      clientPayload = JSON.parse(raw);
       if (clientPayload.accentColor) S.accentColor = clientPayload.accentColor;
       if (clientPayload.bgColor) S.bgColor = clientPayload.bgColor;
       applyTheme();
@@ -632,7 +659,7 @@
     }
     function showClientError() {
       document.getElementById("clientWrap").classList.add("active");
-      document.getElementById("clientWrap").innerHTML = `<div style="display:grid;place-items:center;min-height:100dvh;text-align:center;padding:32px;"><div><h1 class="step-title">Link Not Found</h1><p class="done-sub">This signing link only works in the same browser where it was created.</p></div></div>`;
+      document.getElementById("clientWrap").innerHTML = `<div style="display:grid;place-items:center;min-height:100dvh;text-align:center;padding:32px;"><div><h1 class="step-title">Link Not Found</h1><p class="done-sub">This signing link could not be read. Ask the sender to create a new link.</p></div></div>`;
     }
     function showClientView(payload) {
       const fields = payload.fields || {};

@@ -1,949 +1,801 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Simple Sign">
-<title>Simple Sign</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<style>
-:root {
-  --bg: #0a0a0a;
-  --surface: #161616;
-  --surface2: #202020;
-  --border: #2c2c2c;
-  --accent: #c8a96e;
-  --accent-dim: rgba(200,169,110,0.13);
-  --text: #f0ece4;
-  --text-muted: #666260;
-  --text-sub: #999390;
-  --danger: #e05c5c;
-  --radius: 16px;
-  --radius-sm: 11px;
-}
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent;}
-html{height:100%;}
-body{min-height:100dvh;background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;font-size:16px;overflow-x:hidden;transition:background 0.3s;}
-.app-header{display:flex;align-items:center;justify-content:space-between;padding:14px 20px 12px;position:sticky;top:0;z-index:90;background:var(--bg);border-bottom:1px solid var(--border);transition:background 0.3s;}
-.logo{font-family:'DM Serif Display',serif;font-size:22px;letter-spacing:-0.3px;color:var(--text);}
-.logo-accent{color:var(--accent);}
-.icon-btn{width:40px;height:40px;border-radius:50%;border:1px solid var(--border);background:var(--surface);color:var(--text-sub);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all 0.18s;}
-.icon-btn:active{transform:scale(0.92);background:var(--surface2);}
-.icon-btn svg{width:18px;height:18px;}
-.progress-bar{height:2px;background:var(--border);}
-.progress-fill{height:100%;background:var(--accent);transition:width 0.4s cubic-bezier(.4,0,.2,1);}
-.main{padding:0 20px 110px;overflow-y:auto;-webkit-overflow-scrolling:touch;}
-.screen{display:none;}
-.screen.active{display:block;animation:fadeUp 0.28s ease;}
-@keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
-.step-label{font-size:11px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--text-muted);margin-top:28px;margin-bottom:6px;}
-.step-title{font-family:'DM Serif Display',serif;font-size:28px;line-height:1.2;color:var(--text);margin-bottom:24px;}
-.category-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:4px;}
-.cat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 16px;cursor:pointer;transition:all 0.18s;display:flex;flex-direction:column;gap:10px;}
-.cat-card:active{transform:scale(0.97);}
-.cat-card.selected{border-color:var(--accent);background:var(--accent-dim);}
-.cat-card svg{width:26px;height:26px;stroke:var(--text-sub);fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;}
-.cat-card.selected svg{stroke:var(--accent);}
-.cat-name{font-size:13px;font-weight:500;color:var(--text);line-height:1.3;}
-.cat-desc{font-size:11px;color:var(--text-muted);line-height:1.4;}
-.field-group{margin-bottom:20px;}
-.field-label{display:block;font-size:11px;font-weight:500;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:8px;}
-.field-input,.field-textarea,.field-select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px 16px;color:var(--text);font-family:'DM Sans',sans-serif;font-size:15px;outline:none;transition:border-color 0.18s;-webkit-appearance:none;appearance:none;}
-.field-input:focus,.field-textarea:focus,.field-select:focus{border-color:var(--accent);}
-.field-textarea{resize:none;min-height:88px;line-height:1.5;}
-.field-select{background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%23666' stroke-width='1.5' fill='none' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 16px center;padding-right:40px;}
-.field-input::placeholder,.field-textarea::placeholder{color:var(--text-muted);}
-.line-items{display:flex;flex-direction:column;gap:8px;}
-.line-item{display:grid;grid-template-columns:1fr 88px 32px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);overflow:hidden;align-items:stretch;}
-.line-item input{background:transparent;border:none;color:var(--text);font-family:'DM Sans',sans-serif;font-size:14px;outline:none;padding:13px 14px;}
-.line-item input::placeholder{color:var(--text-muted);}
-.line-item-price{border-left:1px solid var(--border);text-align:right;padding-right:12px;}
-.line-item-remove{border-left:1px solid var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);cursor:pointer;font-size:20px;transition:color 0.18s;padding:0 8px;}
-.line-item-remove:active{color:var(--danger);}
-.add-line-btn{width:100%;background:transparent;border:1px dashed var(--border);border-radius:var(--radius-sm);padding:12px;color:var(--text-muted);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;margin-top:8px;transition:all 0.18s;}
-.add-line-btn:active{border-color:var(--accent);color:var(--accent);}
-.total-row{display:flex;justify-content:space-between;align-items:center;padding:14px 0;border-top:1px solid var(--border);margin-top:10px;}
-.total-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);}
-.total-amount{font-family:'DM Serif Display',serif;font-size:26px;color:var(--accent);}
-.sig-container{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;}
-.sig-label-bar{padding:10px 16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;}
-.sig-label-bar span{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);font-weight:500;}
-.sig-clear{font-size:11px;color:var(--text-muted);cursor:pointer;padding:4px 8px;border-radius:6px;}
-.sig-clear:active{color:var(--danger);}
-canvas.sig-canvas{display:block;width:100%;height:150px;cursor:crosshair;touch-action:none;}
-.use-saved-btn{width:100%;background:var(--accent-dim);border:1px solid var(--accent);color:var(--accent);border-radius:var(--radius-sm);padding:13px;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:500;cursor:pointer;margin-bottom:12px;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:8px;}
-.use-saved-btn:active{opacity:0.8;}
-.saved-sig-preview-wrap{background:var(--surface);border:1px solid var(--accent);border-radius:var(--radius);overflow:hidden;margin-bottom:14px;}
-.saved-sig-img{display:block;width:100%;height:90px;object-fit:contain;padding:8px;}
-.saved-sig-actions{border-top:1px solid var(--border);padding:10px 14px;display:flex;align-items:center;justify-content:space-between;}
-.saved-sig-actions span{font-size:11px;color:var(--accent);letter-spacing:1px;text-transform:uppercase;}
-.saved-sig-actions button{font-size:12px;color:var(--text-muted);background:none;border:none;cursor:pointer;font-family:'DM Sans',sans-serif;}
-.or-divider{display:flex;align-items:center;gap:12px;margin:12px 0;color:var(--text-muted);font-size:12px;}
-.or-divider::before,.or-divider::after{content:'';flex:1;height:1px;background:var(--border);}
-.btn-primary{width:100%;background:var(--accent);color:#0a0a0a;border:none;border-radius:var(--radius-sm);padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all 0.18s;letter-spacing:0.2px;}
-.btn-primary:active{transform:scale(0.98);opacity:0.88;}
-.btn-ghost{width:100%;background:transparent;color:var(--text-sub);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-family:'DM Sans',sans-serif;font-size:14px;cursor:pointer;margin-top:10px;transition:all 0.18s;}
-.btn-ghost:active{border-color:var(--text-sub);}
-.btn-share{width:100%;background:var(--surface);color:var(--text);border:1px solid var(--accent);border-radius:var(--radius-sm);padding:15px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;margin-bottom:0;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:8px;}
-.btn-share:active{background:var(--accent-dim);transform:scale(0.98);}
-.bottom-nav{position:fixed;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);display:flex;gap:10px;z-index:90;transition:background 0.3s;}
-.btn-back{width:48px;min-width:48px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text-sub);font-size:20px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.18s;}
-.btn-back:active{background:var(--surface2);}
-.btn-next{flex:1;background:var(--accent);color:#0a0a0a;border:none;border-radius:var(--radius-sm);padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;transition:all 0.18s;}
-.btn-next:active{opacity:0.88;transform:scale(0.99);}
-.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:200;backdrop-filter:blur(6px);align-items:flex-end;}
-.overlay.open{display:flex;}
-.sheet{width:100%;background:var(--surface);border-radius:24px 24px 0 0;padding:20px 20px max(28px,env(safe-area-inset-bottom));animation:sheetUp 0.28s cubic-bezier(.4,0,.2,1);max-height:88vh;overflow-y:auto;}
-@keyframes sheetUp{from{transform:translateY(100%);}to{transform:translateY(0);}}
-.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:2px;margin:0 auto 20px;}
-.sheet-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:24px;}
-.settings-section{margin-bottom:24px;}
-.settings-section-label{font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);margin-bottom:12px;font-weight:500;}
-.color-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
-.color-swatch{width:36px;height:36px;border-radius:50%;cursor:pointer;border:2px solid transparent;transition:all 0.18s;position:relative;}
-.color-swatch.active{border-color:white;transform:scale(1.1);}
-.color-swatch.active::after{content:'';position:absolute;inset:0;background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='white' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='20 6 9 17 4 12'/%3E%3C/svg%3E") center/14px no-repeat;}
-.color-custom-wrap{position:relative;width:36px;height:36px;}
-.color-custom-wrap input[type="color"]{position:absolute;inset:0;width:100%;height:100%;opacity:0;cursor:pointer;border:none;}
-.color-custom-face{width:36px;height:36px;border-radius:50%;border:2px dashed var(--border);display:flex;align-items:center;justify-content:center;color:var(--text-muted);font-size:18px;pointer-events:none;}
-.sig-modal-overlay{display:none;position:fixed;inset:0;z-index:300;background:rgba(0,0,0,0.88);backdrop-filter:blur(8px);align-items:flex-end;}
-.sig-modal-overlay.open{display:flex;}
-.sig-modal{width:100%;background:var(--surface2);border-radius:24px 24px 0 0;padding:20px 20px max(28px,env(safe-area-inset-bottom));animation:sheetUp 0.28s cubic-bezier(.4,0,.2,1);}
-.sig-modal-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;}
-.sig-modal-title{font-family:'DM Serif Display',serif;font-size:20px;}
-.sig-modal-actions{display:flex;gap:10px;}
-.sig-modal-clear{font-size:13px;color:var(--text-muted);cursor:pointer;padding:6px 12px;border:1px solid var(--border);border-radius:8px;background:none;font-family:'DM Sans',sans-serif;}
-.sig-modal-save{font-size:13px;color:#0a0a0a;cursor:pointer;padding:6px 14px;border:none;border-radius:8px;background:var(--accent);font-family:'DM Sans',sans-serif;font-weight:500;}
-.sig-modal-canvas-wrap{background:#ffffff;border-radius:var(--radius);overflow:hidden;border:1px solid var(--border);}
-canvas.sig-modal-canvas{display:block;width:100%;height:200px;cursor:crosshair;touch-action:none;}
-.sig-modal-hint{font-size:11px;color:var(--text-muted);text-align:center;margin-top:10px;letter-spacing:0.5px;}
-.done-screen{text-align:center;padding-top:48px;}
-.done-icon{width:76px;height:76px;border-radius:50%;background:var(--accent-dim);border:1px solid var(--accent);display:flex;align-items:center;justify-content:center;margin:0 auto 24px;}
-.done-icon svg{width:32px;height:32px;stroke:var(--accent);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;}
-.done-title{font-family:'DM Serif Display',serif;font-size:32px;margin-bottom:10px;}
-.done-sub{color:var(--text-muted);font-size:14px;margin-bottom:36px;line-height:1.6;}
-.toast{position:fixed;bottom:100px;left:50%;transform:translateX(-50%) translateY(16px);background:var(--surface2);color:var(--text);border:1px solid var(--border);border-radius:30px;padding:10px 20px;font-size:13px;opacity:0;transition:all 0.26s;z-index:400;white-space:nowrap;pointer-events:none;}
-.toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
-.brand-preview{font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);min-height:28px;}
-.brand-preview .bp-accent{color:var(--accent);}
-.style-pill{background:var(--surface2);border:1px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;transition:all 0.18s;}
-.style-pill.active{border-color:var(--accent);background:var(--accent-dim);}
-.style-pill:active{transform:scale(0.97);}
-.style-pill-label{font-size:10px;letter-spacing:1px;text-transform:uppercase;color:var(--text-muted);margin-bottom:6px;}
-.style-pill-preview{font-family:'DM Serif Display',serif;font-size:16px;color:var(--text);}
-.divider{height:1px;background:var(--border);margin:6px 0 20px;}
-.settings-sig-thumb{background:#fff;border-radius:var(--radius-sm);overflow:hidden;border:1px solid var(--border);margin-top:10px;display:flex;align-items:center;justify-content:center;height:80px;}
-.settings-sig-thumb img{max-height:70px;max-width:100%;object-fit:contain;}
-.settings-sig-thumb .no-sig{font-size:12px;color:#aaa;}
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Simple Sign">
+  <title>Simple Sign</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <style>
+    :root {
+      --bg: #0a0a0a;
+      --surface: #161616;
+      --surface2: #202020;
+      --border: #2c2c2c;
+      --accent: #c8a96e;
+      --accent-dim: rgba(200, 169, 110, 0.13);
+      --text: #f0ece4;
+      --text-muted: #77706b;
+      --text-sub: #aaa39c;
+      --danger: #e05c5c;
+      --radius: 14px;
+      --radius-sm: 10px;
+    }
 
-/* ── CLIENT VIEW ── */
-.client-wrap{position:fixed;inset:0;background:var(–bg);z-index:500;overflow-y:auto;-webkit-overflow-scrolling:touch;display:none;pointer-events:none;}
-.client-wrap.active{display:block;pointer-events:auto;}
-.client-header{background:var(–bg);border-bottom:1px solid var(–border);padding:14px 20px;position:sticky;top:0;z-index:10;}
-.client-body{padding:24px 20px 140px;}
-.client-bottom{position:fixed;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(–bg);border-top:1px solid var(–border);z-index:10;display:none;}.client-wrap.active .client-bottom{display:block;}
-.detail-card{background:var(–surface);border:1px solid var(–border);border-radius:16px;overflow:hidden;margin-bottom:20px;}
-.detail-row{padding:12px 16px;border-bottom:1px solid var(–border);display:flex;justify-content:space-between;align-items:center;gap:12px;}
-.detail-row:last-child{border-bottom:none;}
-.detail-row-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(–text-muted);font-weight:500;white-space:nowrap;}
-.detail-row-val{font-size:13px;color:var(–text);text-align:right;}
-.action-banner{background:var(–accent-dim);border:1px solid var(–accent);border-radius:12px;padding:16px;margin-bottom:20px;}
-.action-banner-label{font-size:11px;letter-spacing:1px;text-transform:uppercase;color:var(–accent);margin-bottom:4px;font-weight:500;}
-.action-banner-text{font-size:14px;color:var(–text);line-height:1.5;}
-.btn-locked{width:100%;background:var(–surface);color:var(–text-muted);border:1px solid var(–border);border-radius:var(–radius-sm);padding:15px;font-family:‘DM Sans’,sans-serif;font-size:15px;cursor:not-allowed;opacity:0.38;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:8px;margin-top:10px;}
-.btn-locked.unlocked{opacity:1;cursor:pointer;color:var(–text);border-color:var(–accent);}
-.btn-locked.unlocked:active{background:var(–accent-dim);}
-.send-hint{font-size:11px;color:var(–text-muted);text-align:center;margin-top:10px;letter-spacing:0.3px;transition:color 0.3s;}
-</style>
-
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    body { min-height: 100dvh; background: var(--bg); color: var(--text); font-family: "DM Sans", sans-serif; overflow-x: hidden; }
+    button, input, textarea, select { font: inherit; }
+    button { cursor: pointer; color: inherit; }
+    .app-header { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; padding: 14px 20px 12px; background: var(--bg); border-bottom: 1px solid var(--border); }
+    .logo, .brand-preview { font-family: "DM Serif Display", serif; font-size: 22px; letter-spacing: -0.2px; color: var(--text); }
+    .bp-accent { color: var(--accent); }
+    .icon-btn { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--border); background: var(--surface); color: var(--text-sub); display: grid; place-items: center; }
+    .icon-btn:active, .btn-back:active, .btn-next:active, .btn-primary:active, .btn-share:active, .btn-ghost:active, .cat-card:active { transform: scale(0.98); opacity: 0.86; }
+    .progress-bar { height: 2px; background: var(--border); }
+    .progress-fill { height: 100%; background: var(--accent); transition: width 0.25s ease; }
+    .main { padding: 0 20px 132px; }
+    .screen { display: none; }
+    .screen.active { display: block; animation: fadeUp 0.22s ease; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+    .step-label { margin-top: 28px; margin-bottom: 6px; font-size: 11px; font-weight: 500; letter-spacing: 2px; text-transform: uppercase; color: var(--text-muted); }
+    .step-title { margin-bottom: 24px; font-family: "DM Serif Display", serif; font-size: 30px; line-height: 1.15; }
+    .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .cat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 18px 16px; min-height: 116px; display: flex; flex-direction: column; gap: 10px; color: var(--text); }
+    .cat-card.selected { border-color: var(--accent); background: var(--accent-dim); }
+    .cat-card svg { width: 26px; height: 26px; stroke: var(--text-sub); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+    .cat-card.selected svg { stroke: var(--accent); }
+    .cat-name { font-size: 13px; font-weight: 500; color: var(--text); }
+    .cat-desc { font-size: 11px; line-height: 1.4; color: var(--text-muted); }
+    .field-group { margin-bottom: 20px; }
+    .field-label { display: block; margin-bottom: 8px; font-size: 11px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); }
+    .field-input, .field-textarea, .field-select { width: 100%; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 14px 16px; color: var(--text); outline: none; appearance: none; }
+    .field-textarea { min-height: 92px; line-height: 1.5; resize: vertical; }
+    .field-input:focus, .field-textarea:focus, .field-select:focus { border-color: var(--accent); }
+    .line-items { display: flex; flex-direction: column; gap: 8px; }
+    .line-item { display: grid; grid-template-columns: 1fr 92px 36px; background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-sm); overflow: hidden; }
+    .line-item input { min-width: 0; border: 0; background: transparent; color: var(--text); padding: 13px 12px; outline: none; }
+    .line-item-price { border-left: 1px solid var(--border); text-align: right; }
+    .line-item-remove { border-left: 1px solid var(--border); display: grid; place-items: center; color: var(--text-muted); font-size: 20px; }
+    .add-line-btn { width: 100%; margin-top: 8px; padding: 12px; border: 1px dashed var(--border); border-radius: var(--radius-sm); background: transparent; color: var(--text-muted); }
+    .total-row { display: flex; align-items: center; justify-content: space-between; padding-top: 14px; margin-top: 12px; border-top: 1px solid var(--border); }
+    .total-label { font-size: 11px; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); }
+    .total-amount { font-family: "DM Serif Display", serif; font-size: 26px; color: var(--accent); }
+    .sig-container { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; }
+    .sig-label-bar { display: flex; align-items: center; justify-content: space-between; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+    .sig-label-bar span { font-size: 11px; font-weight: 500; letter-spacing: 1.4px; text-transform: uppercase; color: var(--text-muted); }
+    .sig-clear { color: var(--text-muted); background: none; border: 0; padding: 4px 8px; }
+    canvas.sig-canvas { display: block; width: 100%; height: 150px; background: #fff; touch-action: none; }
+    .btn-primary, .btn-next { width: 100%; border: 0; border-radius: var(--radius-sm); padding: 16px; background: var(--accent); color: #0a0a0a; font-weight: 600; }
+    .btn-share, .btn-ghost, .use-saved-btn { width: 100%; border-radius: var(--radius-sm); padding: 14px; background: var(--surface); color: var(--text); border: 1px solid var(--border); }
+    .btn-share, .use-saved-btn { border-color: var(--accent); color: var(--accent); display: flex; align-items: center; justify-content: center; gap: 8px; }
+    .btn-ghost { margin-top: 10px; color: var(--text-sub); }
+    .bottom-nav { position: fixed; left: 0; right: 0; bottom: 0; z-index: 30; display: flex; gap: 10px; padding: 12px 20px; padding-bottom: max(12px, env(safe-area-inset-bottom)); background: var(--bg); border-top: 1px solid var(--border); }
+    .btn-back { width: 48px; min-width: 48px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); color: var(--text-sub); font-size: 20px; }
+    .done-screen { text-align: center; padding-top: 48px; }
+    .done-icon { width: 76px; height: 76px; margin: 0 auto 24px; display: grid; place-items: center; border-radius: 50%; border: 1px solid var(--accent); background: var(--accent-dim); color: var(--accent); }
+    .done-title { font-family: "DM Serif Display", serif; font-size: 34px; margin-bottom: 10px; }
+    .done-sub { margin-bottom: 34px; color: var(--text-muted); line-height: 1.6; }
+    .overlay { position: fixed; inset: 0; z-index: 100; display: none; align-items: flex-end; background: rgba(0, 0, 0, 0.72); backdrop-filter: blur(6px); }
+    .overlay.open { display: flex; }
+    .sheet { width: 100%; max-height: 88vh; overflow-y: auto; background: var(--surface); border-radius: 22px 22px 0 0; padding: 20px 20px max(28px, env(safe-area-inset-bottom)); }
+    .sheet-handle { width: 36px; height: 4px; margin: 0 auto 20px; border-radius: 3px; background: var(--border); }
+    .sheet-title { font-family: "DM Serif Display", serif; font-size: 24px; margin-bottom: 22px; }
+    .settings-section { margin-bottom: 22px; }
+    .settings-section-label { margin-bottom: 10px; font-size: 11px; font-weight: 500; letter-spacing: 1.5px; text-transform: uppercase; color: var(--text-muted); }
+    .color-row { display: flex; gap: 10px; flex-wrap: wrap; }
+    .color-swatch { width: 36px; height: 36px; border-radius: 50%; border: 2px solid transparent; }
+    .color-swatch.active { border-color: #fff; transform: scale(1.08); }
+    .client-wrap { position: fixed; inset: 0; z-index: 200; display: none; background: var(--bg); overflow-y: auto; }
+    .client-wrap.active { display: block; }
+    .detail-card, .action-banner { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin-bottom: 20px; }
+    .action-banner { padding: 16px; background: var(--accent-dim); border-color: var(--accent); }
+    .action-banner-label { margin-bottom: 5px; font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--accent); font-weight: 600; }
+    .action-banner-text { color: var(--text); line-height: 1.5; font-size: 14px; }
+    .detail-row { display: flex; justify-content: space-between; gap: 14px; padding: 12px 16px; border-bottom: 1px solid var(--border); }
+    .detail-row:last-child { border-bottom: 0; }
+    .detail-row-label { font-size: 11px; letter-spacing: 1px; text-transform: uppercase; color: var(--text-muted); white-space: nowrap; }
+    .detail-row-val { color: var(--text); font-size: 13px; text-align: right; }
+    .toast { position: fixed; left: 50%; bottom: 100px; z-index: 500; transform: translateX(-50%) translateY(14px); opacity: 0; pointer-events: none; background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-radius: 999px; padding: 10px 18px; font-size: 13px; white-space: nowrap; transition: 0.22s ease; }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
 </head>
 <body>
-
-<!-- NORMAL APP -->
-
-<header class="app-header" id="appHeader">
-  <div class="logo" id="headerLogo"><span class="logo-main">simple</span><span class="logo-accent">sign</span></div>
-  <div style="display:flex;gap:8px;">
-    <button class="icon-btn" onclick="openSettings()">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
-      </svg>
+  <header class="app-header" id="appHeader">
+    <div class="logo" id="headerLogo">simple<span class="bp-accent">sign</span></div>
+    <button class="icon-btn" type="button" onclick="openSettings()" aria-label="Settings">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     </button>
-  </div>
-</header>
-<div class="progress-bar" id="appProgress"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+  </header>
+  <div class="progress-bar" id="appProgress"><div class="progress-fill" id="progressFill"></div></div>
 
-<div class="main" id="appMain">
-  <!-- S1 -->
-  <div class="screen active" id="screen-1">
-    <p class="step-label">Step 1 of 5</p>
-    <h1 class="step-title">What are we signing today?</h1>
-    <div class="category-grid">
-      <div class="cat-card" onclick="selectCategory('car')" id="cat-car">
-        <svg viewBox="0 0 24 24"><path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/></svg>
-        <div class="cat-name">Car Rental</div><div class="cat-desc">Vehicle rental agreement</div>
-      </div>
-      <div class="cat-card" onclick="selectCategory('barber')" id="cat-barber">
-        <svg viewBox="0 0 24 24"><path d="M6 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/><path d="M18 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/><path d="M6 9l12 12M18 9L6 21"/></svg>
-        <div class="cat-name">Barber Agreement</div><div class="cat-desc">Booth rental &amp; terms</div>
-      </div>
-      <div class="cat-card" onclick="selectCategory('photo')" id="cat-photo">
-        <svg viewBox="0 0 24 24"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-        <div class="cat-name">Photo / Video</div><div class="cat-desc">Creative services</div>
-      </div>
-      <div class="cat-card" onclick="selectCategory('nda')" id="cat-nda">
-        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
-        <div class="cat-name">NDA</div><div class="cat-desc">Non-disclosure agreement</div>
-      </div>
-      <div class="cat-card" onclick="selectCategory('invoice')" id="cat-invoice">
-        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/><line x1="9" y1="9" x2="10" y2="9"/></svg>
-        <div class="cat-name">Invoice</div><div class="cat-desc">Line items &amp; total</div>
-      </div>
-      <div class="cat-card" onclick="selectCategory('receipt')" id="cat-receipt">
-        <svg viewBox="0 0 24 24"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/></svg>
-        <div class="cat-name">Receipt</div><div class="cat-desc">Payment confirmation</div>
-      </div>
-    </div>
-  </div>
+  <main class="main" id="appMain">
+    <section class="screen active" id="screen-1">
+      <p class="step-label">Step 1 of 5</p>
+      <h1 class="step-title">What are we signing today?</h1>
+      <div class="category-grid" id="categoryGrid"></div>
+    </section>
 
-  <!-- S2 -->
+    <section class="screen" id="screen-2">
+      <p class="step-label">Step 2 of 5</p>
+      <h1 class="step-title">Who's involved?</h1>
+      <div class="field-group"><label class="field-label" for="yourName">Your Name / Business</label><input class="field-input" id="yourName" type="text" placeholder="Your name or business name" autocomplete="off"></div>
+      <div class="field-group"><label class="field-label" for="clientName">Client Full Name</label><input class="field-input" id="clientName" type="text" placeholder="Client full name" autocomplete="off"></div>
+      <div class="field-group"><label class="field-label" for="docDate">Date</label><input class="field-input" id="docDate" type="date"></div>
+    </section>
 
-  <div class="screen" id="screen-2">
-    <p class="step-label">Step 2 of 5</p>
-    <h1 class="step-title">Who's involved?</h1>
-    <div class="field-group"><label class="field-label">Your Name / Business</label><input class="field-input" id="yourName" type="text" placeholder="Your name or business name" autocomplete="off"></div>
-    <div class="field-group"><label class="field-label">Client Full Name</label><input class="field-input" id="clientName" type="text" placeholder="Client full name" autocomplete="off"></div>
-    <div class="field-group"><label class="field-label">Date</label><input class="field-input" id="docDate" type="date"></div>
-  </div>
+    <section class="screen" id="screen-3">
+      <p class="step-label">Step 3 of 5</p>
+      <h1 class="step-title" id="detailsTitle">Agreement Details</h1>
+      <div id="detailsFields"></div>
+    </section>
 
-  <!-- S3 -->
-
-  <div class="screen" id="screen-3">
-    <p class="step-label">Step 3 of 5</p>
-    <h1 class="step-title" id="detailsTitle">Agreement Details</h1>
-    <div id="detailsFields"></div>
-  </div>
-
-  <!-- S4 -->
-
-  <div class="screen" id="screen-4">
-    <p class="step-label">Step 4 of 5</p>
-    <h1 class="step-title">Signatures</h1>
-    <div class="field-group">
-      <label class="field-label">Your Signature</label>
-      <div id="yourSigBlock">
-        <div id="savedSigDisplay" style="display:none">
-          <div class="saved-sig-preview-wrap">
-            <img id="savedSigImg" class="saved-sig-img" src="" alt="Saved signature">
-            <div class="saved-sig-actions"><span>Saved signature</span><button onclick="clearSavedSigUsed()">Sign differently</button></div>
-          </div>
+    <section class="screen" id="screen-4">
+      <p class="step-label">Step 4 of 5</p>
+      <h1 class="step-title">Signatures</h1>
+      <div class="field-group">
+        <label class="field-label">Your Signature</label>
+        <button class="use-saved-btn" id="useSavedRow" type="button" onclick="applySavedSig()" style="display:none;margin-bottom:12px;">Use my saved signature</button>
+        <div id="savedSigDisplay" style="display:none;margin-bottom:14px;">
+          <div class="sig-container"><img id="savedSigImg" alt="Saved signature" style="display:block;width:100%;height:100px;object-fit:contain;background:#fff;padding:8px;"><button class="btn-ghost" type="button" onclick="clearSavedSigUsed()">Sign differently</button></div>
         </div>
-        <div id="yourDrawBlock">
-          <div id="useSavedRow" style="display:none;margin-bottom:12px;">
-            <button class="use-saved-btn" onclick="applySavedSig()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
-              Use my saved signature
-            </button>
-            <div class="or-divider">or sign below</div>
-          </div>
-          <div class="sig-container">
-            <div class="sig-label-bar"><span>Your Signature</span><span class="sig-clear" onclick="clearCanvas('yourSigCanvas')">Clear</span></div>
-            <canvas class="sig-canvas" id="yourSigCanvas"></canvas>
-          </div>
+        <div id="yourDrawBlock" class="sig-container">
+          <div class="sig-label-bar"><span>Your Signature</span><button class="sig-clear" type="button" onclick="clearCanvas('yourSigCanvas')">Clear</button></div>
+          <canvas class="sig-canvas" id="yourSigCanvas"></canvas>
         </div>
       </div>
-    </div>
-    <div class="field-group">
-      <label class="field-label">Client Signature</label>
-      <div class="sig-container">
-        <div class="sig-label-bar"><span id="clientSigLabel">Client Signature</span><span class="sig-clear" onclick="clearCanvas('clientSigCanvas')">Clear</span></div>
-        <canvas class="sig-canvas" id="clientSigCanvas"></canvas>
+      <div class="field-group">
+        <label class="field-label">Client Signature</label>
+        <div class="sig-container">
+          <div class="sig-label-bar"><span id="clientSigLabel">Client Signature</span><button class="sig-clear" type="button" onclick="clearCanvas('clientSigCanvas')">Clear</button></div>
+          <canvas class="sig-canvas" id="clientSigCanvas"></canvas>
+        </div>
       </div>
+    </section>
+
+    <section class="screen" id="screen-5">
+      <div class="done-screen">
+        <div class="done-icon"><svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+        <h1 class="done-title">Ready.</h1>
+        <p class="done-sub" id="doneSubText">Your agreement is ready.</p>
+        <button class="btn-primary" type="button" onclick="generatePDF()" style="margin-bottom:10px;">Download My Copy</button>
+        <button class="btn-share" type="button" onclick="shareWithClient()">Send to Client for Signature</button>
+        <button class="btn-ghost" type="button" onclick="startOver()">Start New Agreement</button>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" id="bottomNav">
+    <button class="btn-back" id="backBtn" type="button" onclick="goBack()">&#8592;</button>
+    <button class="btn-next" id="nextBtn" type="button" onclick="goNext()">Continue &#8594;</button>
+  </nav>
+
+  <div class="client-wrap" id="clientWrap"></div>
+
+  <div class="overlay" id="settingsOverlay" onclick="overlayClickClose(event, 'settingsOverlay')">
+    <div class="sheet" onclick="event.stopPropagation()">
+      <div class="sheet-handle"></div>
+      <h2 class="sheet-title">Settings</h2>
+      <div class="settings-section">
+        <div class="settings-section-label">Brand Name</div>
+        <input class="field-input" id="sBizName" type="text" placeholder="e.g. Jet Creative" oninput="saveSetting('bizName', this.value); updateBrandPreview();">
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-label">Tagline</div>
+        <input class="field-input" id="sTagline" type="text" placeholder="e.g. Professional Services" oninput="saveSetting('tagline', this.value); updateBrandPreview();">
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-label">Your Email</div>
+        <input class="field-input" id="sEmail" type="email" placeholder="you@email.com" oninput="saveSetting('email', this.value)">
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-label">Default Signature</div>
+        <div class="sig-container" style="margin-bottom:10px;"><canvas class="sig-canvas" id="settingsSigCanvas"></canvas></div>
+        <button class="use-saved-btn" type="button" onclick="saveDefaultSignature()">Save Signature</button>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-label">Background</div>
+        <div class="color-row" id="bgColorRow"></div>
+      </div>
+      <div class="settings-section">
+        <div class="settings-section-label">Accent</div>
+        <div class="color-row" id="accentColorRow"></div>
+      </div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:18px;">
+        <div class="brand-preview" id="brandPreview"></div>
+        <div id="taglinePreview" style="font-size:11px;color:var(--text-muted);letter-spacing:1px;margin-top:2px;"></div>
+      </div>
+      <button class="btn-primary" type="button" onclick="closeSettings()">Save &amp; Close</button>
     </div>
   </div>
 
-  <!-- S5 -->
+  <div class="toast" id="toast"></div>
 
-  <div class="screen" id="screen-5">
-    <div class="done-screen">
-      <div class="done-icon"><svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg></div>
-      <h1 class="done-title">Ready.</h1>
-      <p class="done-sub" id="doneSubText">Your agreement is ready.<br>Download your copy or send to client.</p>
-      <button class="btn-primary" onclick="generatePDF()" style="margin-bottom:10px;">Download My Copy</button>
-      <button class="btn-share" onclick="shareWithClient()">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg>
-        Send to Client for Signature
-      </button>
-      <button class="btn-ghost" onclick="startOver()" style="margin-top:10px;">Start New Agreement</button>
-    </div>
-  </div>
-</div>
+  <script>
+    let step = 1;
+    let category = null;
+    let usingDefaultSig = false;
+    let lineCount = 0;
+    let clientPayload = null;
+    let clientSigData = null;
+    let clientPdfDoc = null;
 
-<div class="bottom-nav" id="bottomNav">
-  <button class="btn-back" id="backBtn" onclick="goBack()">&#8592;</button>
-  <button class="btn-next" id="nextBtn" onclick="goNext()">Continue &#8594;</button>
-</div>
+    const DEFAULT_SETTINGS = {
+      bizName: "",
+      tagline: "",
+      defaultSigData: "",
+      bgColor: "#0a0a0a",
+      accentColor: "#c8a96e",
+      email: ""
+    };
+    let S = { ...DEFAULT_SETTINGS, ...JSON.parse(localStorage.getItem("ss_settings") || "{}") };
 
-<!-- CLIENT VIEW — completely separate from app -->
+    const CATS = {
+      basic: { name: "Basic Agreement", desc: "Simple custom terms", icon: '<path d="M6 2h9l5 5v15H6z"/><path d="M14 2v6h6"/><path d="M9 13h6M9 17h6"/>' },
+      car: { name: "Car Rental Agreement", desc: "Vehicle rental agreement", icon: '<path d="M5 17H3a2 2 0 0 1-2-2V9a2 2 0 0 1 2-2h1l2-4h10l2 4h1a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2h-2"/><circle cx="7.5" cy="17.5" r="2.5"/><circle cx="16.5" cy="17.5" r="2.5"/>' },
+      barber: { name: "Barber Agreement", desc: "Booth rental and terms", icon: '<path d="M6 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/><path d="M18 3a3 3 0 1 1 0 6 3 3 0 0 1 0-6z"/><path d="M6 9l12 12M18 9L6 21"/>' },
+      photo: { name: "Photo / Video", desc: "Creative services", icon: '<path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/>' },
+      nda: { name: "NDA", desc: "Non-disclosure agreement", icon: '<rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>' },
+      invoice: { name: "Invoice", desc: "Line items and total", icon: '<path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="9" y1="13" x2="15" y2="13"/><line x1="9" y1="17" x2="15" y2="17"/>' },
+      receipt: { name: "Receipt", desc: "Payment confirmation", icon: '<path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><path d="M9 12h6M9 16h4"/>' }
+    };
 
-<!-- client view injected by JS when ?sign= detected -->
+    window.addEventListener("load", () => {
+      renderCategories();
+      renderSwatches();
+      applyTheme();
+      loadSettingsUI();
+      document.getElementById("docDate").value = todayISO();
+      if (S.bizName) document.getElementById("yourName").value = S.bizName;
+      if (!checkClientMode()) {
+        initDrawCanvas("yourSigCanvas");
+        initDrawCanvas("clientSigCanvas");
+        initDrawCanvas("settingsSigCanvas");
+        updateNav();
+        updateProgress();
+      }
+    });
 
-<div class="client-wrap" id="clientWrap" style="pointer-events:none;"></div>
+    function persist() { localStorage.setItem("ss_settings", JSON.stringify(S)); }
+    function saveSetting(k, v) { S[k] = v; persist(); }
+    function todayISO() { return new Date().toISOString().split("T")[0]; }
+    function V(id) { const el = document.getElementById(id); return el ? (el.value || "") : ""; }
+    function money(v) { return "$" + (parseFloat(v) || 0).toFixed(2); }
 
-<!-- SETTINGS -->
+    function renderCategories() {
+      document.getElementById("categoryGrid").innerHTML = Object.entries(CATS).map(([key, cat]) => `
+        <button class="cat-card" id="cat-${key}" type="button" onclick="selectCategory('${key}')">
+          <svg viewBox="0 0 24 24">${cat.icon}</svg>
+          <span class="cat-name">${cat.name}</span>
+          <span class="cat-desc">${cat.desc}</span>
+        </button>
+      `).join("");
+    }
 
-<div class="overlay" id="settingsOverlay" onclick="overlayClickClose(event,'settingsOverlay')">
-  <div class="sheet">
-    <div class="sheet-handle"></div>
-    <h2 class="sheet-title">Settings</h2>
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:16px;">Identity</div>
-    <div class="settings-section">
-      <div class="settings-section-label">Brand Name</div>
-      <input class="field-input" id="sBizName" type="text" placeholder="e.g. Jet Creative" oninput="saveSetting('bizName',this.value);updateBrandPreview()">
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-label">Tagline</div>
-      <input class="field-input" id="sTagline" type="text" placeholder="e.g. Professional Services" oninput="saveSetting('tagline',this.value);updateBrandPreview()">
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Shows under your brand name on documents</div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-label">Logo Style</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;" id="logoStyleGrid">
-        <div class="style-pill active" data-v="split" onclick="setLogoStyle('split',this)"><div class="style-pill-label">Split Accent</div><div class="style-pill-preview"><span>sim</span><span style="color:var(--accent)">ple</span></div></div>
-        <div class="style-pill" data-v="end" onclick="setLogoStyle('end',this)"><div class="style-pill-label">End Accent</div><div class="style-pill-preview"><span>simple</span><span style="color:var(--accent)">sign</span></div></div>
-        <div class="style-pill" data-v="start" onclick="setLogoStyle('start',this)"><div class="style-pill-label">Start Accent</div><div class="style-pill-preview"><span style="color:var(--accent)">simple</span><span>sign</span></div></div>
-        <div class="style-pill" data-v="full" onclick="setLogoStyle('full',this)"><div class="style-pill-label">Full Accent</div><div class="style-pill-preview" style="color:var(--accent)">simplesign</div></div>
-      </div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-label">Brand Preview</div>
-      <div style="background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;">
-        <div class="brand-preview" id="brandPreview" style="font-size:22px;margin-bottom:4px;"></div>
-        <div id="taglinePreview" style="font-size:11px;color:var(--text-muted);letter-spacing:1px;"></div>
-      </div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-label">Your Email</div>
-      <input class="field-input" id="sEmail" type="email" placeholder="you@email.com" oninput="saveSetting('email',this.value)">
-      <div style="font-size:11px;color:var(--text-muted);margin-top:6px;">Client signed copies arrive here via their mail app</div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:16px;">Signature</div>
-    <div class="settings-section">
-      <div class="settings-section-label">Your Default Signature</div>
-      <div class="settings-sig-thumb" id="settingsSigThumb"><span class="no-sig">No signature saved yet</span></div>
-      <button class="use-saved-btn" style="margin-top:10px;margin-bottom:0" onclick="openSigModal('settings')">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
-        Draw / Update Signature
-      </button>
-      <div style="font-size:11px;color:var(--text-muted);margin-top:8px;">Auto-fills your side on every agreement</div>
-    </div>
-    <div class="divider"></div>
-    <div style="font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:16px;">Colors</div>
-    <div class="settings-section">
-      <div class="settings-section-label">Background</div>
-      <div class="color-row" id="bgColorRow">
-        <div class="color-swatch" style="background:#0a0a0a" data-c="#0a0a0a" onclick="setBg('#0a0a0a',this)"></div>
-        <div class="color-swatch" style="background:#0d1117" data-c="#0d1117" onclick="setBg('#0d1117',this)"></div>
-        <div class="color-swatch" style="background:#12100f" data-c="#12100f" onclick="setBg('#12100f',this)"></div>
-        <div class="color-swatch" style="background:#0a0f1e" data-c="#0a0f1e" onclick="setBg('#0a0f1e',this)"></div>
-        <div class="color-swatch" style="background:#1a0a0a" data-c="#1a0a0a" onclick="setBg('#1a0a0a',this)"></div>
-        <div class="color-swatch" style="background:#0a1a0a" data-c="#0a1a0a" onclick="setBg('#0a1a0a',this)"></div>
-        <div class="color-swatch" style="background:#f5f3ef" data-c="#f5f3ef" onclick="setBg('#f5f3ef',this)"></div>
-        <div class="color-custom-wrap"><input type="color" id="bgCustom" oninput="setBg(this.value,null)"><div class="color-custom-face">+</div></div>
-      </div>
-    </div>
-    <div class="settings-section">
-      <div class="settings-section-label">Accent</div>
-      <div class="color-row" id="accentColorRow">
-        <div class="color-swatch" style="background:#c8a96e" data-c="#c8a96e" onclick="setAccent('#c8a96e',this)"></div>
-        <div class="color-swatch" style="background:#6eb5c8" data-c="#6eb5c8" onclick="setAccent('#6eb5c8',this)"></div>
-        <div class="color-swatch" style="background:#e07c5c" data-c="#e07c5c" onclick="setAccent('#e07c5c',this)"></div>
-        <div class="color-swatch" style="background:#5cb87c" data-c="#5cb87c" onclick="setAccent('#5cb87c',this)"></div>
-        <div class="color-swatch" style="background:#9b6ec8" data-c="#9b6ec8" onclick="setAccent('#9b6ec8',this)"></div>
-        <div class="color-swatch" style="background:#c8c86e" data-c="#c8c86e" onclick="setAccent('#c8c86e',this)"></div>
-        <div class="color-swatch" style="background:#e8e8e8" data-c="#e8e8e8" onclick="setAccent('#e8e8e8',this)"></div>
-        <div class="color-swatch" style="background:#ff6b9d" data-c="#ff6b9d" onclick="setAccent('#ff6b9d',this)"></div>
-        <div class="color-custom-wrap"><input type="color" id="accentCustom" oninput="setAccent(this.value,null)"><div class="color-custom-face">+</div></div>
-      </div>
-    </div>
-    <button class="btn-primary" onclick="closeSettings()" style="margin-top:8px;">Save &amp; Close</button>
-  </div>
-</div>
+    function hexToRgbArr(hex) {
+      const h = hex.replace("#", "");
+      return [parseInt(h.slice(0, 2), 16), parseInt(h.slice(2, 4), 16), parseInt(h.slice(4, 6), 16)];
+    }
+    function hexToRgba(hex, a) { const [r, g, b] = hexToRgbArr(hex); return `rgba(${r}, ${g}, ${b}, ${a})`; }
+    function shade(hex, amt) {
+      const [r, g, b] = hexToRgbArr(hex);
+      return `rgb(${Math.max(0, Math.min(255, r + amt))}, ${Math.max(0, Math.min(255, g + amt))}, ${Math.max(0, Math.min(255, b + amt))})`;
+    }
+    function luminance(hex) { const [r, g, b] = hexToRgbArr(hex); return 0.299 * r + 0.587 * g + 0.114 * b; }
 
-<!-- SIG MODAL -->
+    function applyTheme() {
+      const r = document.documentElement;
+      r.style.setProperty("--bg", S.bgColor);
+      r.style.setProperty("--accent", S.accentColor);
+      r.style.setProperty("--accent-dim", hexToRgba(S.accentColor, 0.13));
+      if (luminance(S.bgColor) < 80) {
+        r.style.setProperty("--surface", shade(S.bgColor, 12));
+        r.style.setProperty("--surface2", shade(S.bgColor, 22));
+        r.style.setProperty("--border", shade(S.bgColor, 34));
+        r.style.setProperty("--text", "#f0ece4");
+        r.style.setProperty("--text-muted", "#77706b");
+        r.style.setProperty("--text-sub", "#aaa39c");
+      } else {
+        r.style.setProperty("--surface", shade(S.bgColor, -8));
+        r.style.setProperty("--surface2", shade(S.bgColor, -14));
+        r.style.setProperty("--border", shade(S.bgColor, -26));
+        r.style.setProperty("--text", "#191816");
+        r.style.setProperty("--text-muted", "#777");
+        r.style.setProperty("--text-sub", "#555");
+      }
+      updateBrandPreview();
+      markActiveSwatches();
+    }
 
-<div class="sig-modal-overlay" id="sigModalOverlay">
-  <div class="sig-modal">
-    <div class="sig-modal-header">
-      <div class="sig-modal-title">Draw Your Signature</div>
-      <div class="sig-modal-actions">
-        <button class="sig-modal-clear" onclick="clearSigModal()">Clear</button>
-        <button class="sig-modal-save" onclick="saveSigModal()">Save</button>
-      </div>
-    </div>
-    <div class="sig-modal-canvas-wrap"><canvas class="sig-modal-canvas" id="sigModalCanvas"></canvas></div>
-    <div class="sig-modal-hint">Sign with your finger in the white area above</div>
-    <button class="btn-ghost" style="margin-top:14px" onclick="closeSigModal()">Cancel</button>
-  </div>
-</div>
+    function renderSwatches() {
+      const bgs = ["#0a0a0a", "#0d1117", "#12100f", "#0a0f1e", "#1a0a0a", "#0a1a0a", "#f5f3ef"];
+      const accents = ["#c8a96e", "#6eb5c8", "#e07c5c", "#5cb87c", "#9b6ec8", "#c8c86e", "#e8e8e8", "#ff6b9d"];
+      document.getElementById("bgColorRow").innerHTML = bgs.map(c => `<button class="color-swatch" type="button" data-c="${c}" onclick="setBg('${c}', this)" style="background:${c}"></button>`).join("");
+      document.getElementById("accentColorRow").innerHTML = accents.map(c => `<button class="color-swatch" type="button" data-c="${c}" onclick="setAccent('${c}', this)" style="background:${c}"></button>`).join("");
+    }
+    function setBg(color) { S.bgColor = color; persist(); applyTheme(); }
+    function setAccent(color) { S.accentColor = color; persist(); applyTheme(); }
+    function markActiveSwatches() {
+      document.querySelectorAll("#bgColorRow .color-swatch").forEach(s => s.classList.toggle("active", s.dataset.c === S.bgColor));
+      document.querySelectorAll("#accentColorRow .color-swatch").forEach(s => s.classList.toggle("active", s.dataset.c === S.accentColor));
+    }
 
-<div class="toast" id="toast"></div>
+    function openSettings() {
+      loadSettingsUI();
+      document.getElementById("settingsOverlay").classList.add("open");
+      setTimeout(() => resizeCanvas(document.getElementById("settingsSigCanvas"), S.defaultSigData), 60);
+    }
+    function closeSettings() {
+      document.getElementById("settingsOverlay").classList.remove("open");
+      if (S.bizName) document.getElementById("yourName").value = S.bizName;
+    }
+    function overlayClickClose(e, id) { if (e.target.id === id) closeSettings(); }
+    function loadSettingsUI() {
+      document.getElementById("sBizName").value = S.bizName || "";
+      document.getElementById("sEmail").value = S.email || "";
+      document.getElementById("sTagline").value = S.tagline || "";
+      updateBrandPreview();
+    }
+    function updateBrandPreview() {
+      const name = S.bizName || "simplesign";
+      const split = name.includes(" ") ? name.lastIndexOf(" ") : Math.ceil(name.length / 2);
+      const a = name.slice(0, split);
+      const b = name.slice(split);
+      const html = `<span>${a}</span><span class="bp-accent">${b}</span>`;
+      const preview = document.getElementById("brandPreview");
+      const header = document.getElementById("headerLogo");
+      if (preview) preview.innerHTML = html;
+      if (header) header.innerHTML = html;
+      const tag = document.getElementById("taglinePreview");
+      if (tag) tag.textContent = S.tagline || "";
+    }
+    function saveDefaultSignature() {
+      const canvas = document.getElementById("settingsSigCanvas");
+      if (isCanvasBlank(canvas)) {
+        showToast("Draw your signature first");
+        return;
+      }
+      S.defaultSigData = canvasToWhitePNG(canvas);
+      persist();
+      showToast("Signature saved");
+    }
 
-<script>
-// ── STATE ──
-let step=1, category=null, usingDefaultSig=false, sigModalCaller='';
-let _clientPayload=null, _clientSigData=null;
+    function initDrawCanvas(id) {
+      const canvas = document.getElementById(id);
+      if (!canvas) return;
+      resizeCanvas(canvas);
+      let drawing = false;
+      function pos(e) {
+        const r = canvas.getBoundingClientRect();
+        const t = e.touches ? e.touches[0] : e;
+        return { x: t.clientX - r.left, y: t.clientY - r.top };
+      }
+      function start(e) {
+        e.preventDefault();
+        drawing = true;
+        const p = pos(e);
+        const ctx = canvas.getContext("2d");
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      }
+      function draw(e) {
+        if (!drawing) return;
+        e.preventDefault();
+        const p = pos(e);
+        const ctx = canvas.getContext("2d");
+        ctx.strokeStyle = "#1a1a1a";
+        ctx.lineWidth = 2.5;
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round";
+        ctx.lineTo(p.x, p.y);
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.moveTo(p.x, p.y);
+      }
+      function stop() { drawing = false; }
+      canvas.addEventListener("mousedown", start);
+      canvas.addEventListener("mousemove", draw);
+      canvas.addEventListener("mouseup", stop);
+      canvas.addEventListener("mouseleave", stop);
+      canvas.addEventListener("touchstart", start, { passive: false });
+      canvas.addEventListener("touchmove", draw, { passive: false });
+      canvas.addEventListener("touchend", stop);
+    }
+    function resizeCanvas(canvas, imageData) {
+      if (!canvas) return;
+      const rect = canvas.getBoundingClientRect();
+      const dpr = window.devicePixelRatio || 1;
+      canvas.width = Math.max(1, rect.width * dpr);
+      canvas.height = Math.max(1, rect.height * dpr);
+      const ctx = canvas.getContext("2d");
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      if (imageData) {
+        const img = new Image();
+        img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
+        img.src = imageData;
+      }
+    }
+    function clearCanvas(id) {
+      const c = document.getElementById(id);
+      if (!c) return;
+      c.getContext("2d").clearRect(0, 0, c.width, c.height);
+    }
+    function isCanvasBlank(canvas) {
+      if (!canvas) return true;
+      const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
+      for (let i = 3; i < data.length; i += 4) if (data[i] > 10) return false;
+      return true;
+    }
+    function canvasToWhitePNG(canvas) {
+      const flat = document.createElement("canvas");
+      flat.width = canvas.width;
+      flat.height = canvas.height;
+      const ctx = flat.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, flat.width, flat.height);
+      ctx.drawImage(canvas, 0, 0);
+      return flat.toDataURL("image/png");
+    }
 
-const DEF={bizName:'',tagline:'',logoStyle:'split',defaultSigData:'',bgColor:'#0a0a0a',accentColor:'#c8a96e',email:''};
-let S={...DEF,...JSON.parse(localStorage.getItem('ss_settings')||'{}')};
-function persist(){localStorage.setItem('ss_settings',JSON.stringify(S));}
-function saveSetting(k,v){S[k]=v;persist();}
+    function selectCategory(cat) {
+      category = cat;
+      document.querySelectorAll(".cat-card").forEach(c => c.classList.remove("selected"));
+      document.getElementById(`cat-${cat}`).classList.add("selected");
+    }
+    function goNext() {
+      if (step === 1) {
+        if (!category) return showToast("Select a document type");
+        step = 2;
+      } else if (step === 2) {
+        if (!V("yourName").trim()) return showToast("Enter your name");
+        if (!V("clientName").trim()) return showToast("Enter client name");
+        buildDetailsScreen();
+        step = 3;
+      } else if (step === 3) {
+        step = 4;
+        buildSigScreen();
+      } else if (step === 4) {
+        step = 5;
+        buildDoneScreen();
+      }
+      showScreen(step);
+      updateNav();
+      updateProgress();
+    }
+    function goBack() {
+      if (step <= 1) return;
+      step--;
+      showScreen(step);
+      updateNav();
+      updateProgress();
+    }
+    function showScreen(n) {
+      document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+      document.getElementById(`screen-${n}`).classList.add("active");
+      window.scrollTo(0, 0);
+    }
+    function updateNav() {
+      document.getElementById("backBtn").style.display = step === 1 ? "none" : "block";
+      document.getElementById("bottomNav").style.display = step === 5 ? "none" : "flex";
+      document.getElementById("nextBtn").textContent = step === 4 ? "Review ->" : "Continue ->";
+    }
+    function updateProgress() { document.getElementById("progressFill").style.width = `${((step - 1) / 4) * 100}%`; }
+    function startOver() {
+      step = 1;
+      category = null;
+      usingDefaultSig = false;
+      document.querySelectorAll(".cat-card").forEach(c => c.classList.remove("selected"));
+      document.getElementById("clientName").value = "";
+      document.getElementById("yourName").value = S.bizName || "";
+      document.getElementById("docDate").value = todayISO();
+      ["yourSigCanvas", "clientSigCanvas"].forEach(clearCanvas);
+      showScreen(1);
+      updateNav();
+      updateProgress();
+    }
 
-// ── INIT ──
-window.addEventListener('load',()=>{
-  applyTheme();
-  loadSettingsUI();
-  document.getElementById('docDate').value=todayISO();
-  if(S.bizName) document.getElementById('yourName').value=S.bizName;
-  if(!checkClientMode()){
-    initDrawCanvas('yourSigCanvas');
-    initDrawCanvas('clientSigCanvas');
-    updateNav();
-    updateProgress();
-  }
-  markActiveSwatches();
-});
+    function F(id, type, label, ph = "") {
+      return `<div class="field-group"><label class="field-label" for="${id}">${label}</label><input class="field-input" id="${id}" type="${type}" placeholder="${ph}" autocomplete="off"></div>`;
+    }
+    function FTA(id, label, def = "") {
+      return `<div class="field-group"><label class="field-label" for="${id}">${label}</label><textarea class="field-textarea" id="${id}">${def}</textarea></div>`;
+    }
+    function FSEL(id, label, opts) {
+      return `<div class="field-group"><label class="field-label" for="${id}">${label}</label><select class="field-select" id="${id}">${opts.map(o => `<option>${o}</option>`).join("")}</select></div>`;
+    }
+    function buildDetailsScreen() {
+      const titles = { basic: "Agreement Details", car: "Vehicle Details", barber: "Booth Details", photo: "Project Details", nda: "Agreement Scope", invoice: "Invoice Items", receipt: "Payment Details" };
+      document.getElementById("detailsTitle").textContent = titles[category];
+      const c = document.getElementById("detailsFields");
+      lineCount = 0;
+      if (category === "basic") {
+        c.innerHTML = F("basicTitle", "text", "Agreement Title", "e.g. Service Agreement") + F("basicPurpose", "text", "Purpose", "What is this agreement for?") + F("basicStartDate", "date", "Start Date") + F("basicEndDate", "date", "End Date") + F("basicAmount", "text", "Amount / Payment ($)", "0.00") + FTA("basicTerms", "Terms", "Both parties agree to the terms described here. Each party confirms they have reviewed the agreement and accepts the responsibilities listed.");
+      } else if (category === "car") {
+        c.innerHTML = F("carMake", "text", "Vehicle Make & Model", "e.g. Toyota Camry 2022") + F("carPlate", "text", "License Plate") + F("carPickup", "date", "Pickup Date") + F("carReturn", "date", "Return Date") + F("carMileageOut", "number", "Mileage at Pickup", "0") + F("carDeposit", "text", "Security Deposit ($)", "0.00") + F("carRate", "text", "Daily Rate ($)", "0.00") + FTA("carTerms", "Additional Terms", "Renter is responsible for traffic violations, tolls, fuel, and any damage during the rental period.");
+      } else if (category === "barber") {
+        c.innerHTML = F("barberStation", "text", "Station / Booth Number") + F("barberRate", "text", "Weekly Booth Rent ($)", "0.00") + F("barberStartDate", "date", "Start Date") + F("barberSchedule", "text", "Work Schedule", "e.g. Tue-Sat, 9am-6pm") + FTA("barberTerms", "Terms & Responsibilities", "Barber agrees to maintain a clean station, supply their own tools, follow shop policies, and pay booth rent on time.");
+      } else if (category === "photo") {
+        c.innerHTML = FSEL("photoType", "Service Type", ["Photography", "Videography", "Photography & Videography"]) + F("photoDate", "date", "Shoot Date") + F("photoLocation", "text", "Location") + F("photoHours", "text", "Hours of Coverage", "e.g. 4 hours") + F("photoDeliverables", "text", "Deliverables", "e.g. 100 edited photos") + F("photoRate", "text", "Total Rate ($)", "0.00") + F("photoDeposit", "text", "Deposit Paid ($)", "0.00") + FTA("photoTerms", "Additional Terms", "A non-refundable deposit is required to hold the date. Photographer retains creative and intellectual property rights.");
+      } else if (category === "nda") {
+        c.innerHTML = F("ndaPurpose", "text", "Purpose / Project") + FTA("ndaScope", "Confidential Information Includes", "Business plans, financial data, client lists, trade secrets, pricing, and proprietary business information.") + F("ndaDuration", "text", "Duration", "e.g. 2 years") + F("ndaJurisdiction", "text", "Governing Law / State");
+      } else {
+        const lbl = category === "invoice" ? "Invoice" : "Receipt";
+        c.innerHTML = F("invNumber", "text", `${lbl} Number`, "#001") + F("invDue", "date", category === "invoice" ? "Due Date" : "Payment Date") + F("invNotes", "text", "Project / Notes") + `<div class="field-group"><label class="field-label">Line Items</label><div class="line-items" id="lineItems"></div><button class="add-line-btn" type="button" onclick="addLine()">+ Add Item</button><div class="total-row"><span class="total-label">Total</span><span class="total-amount" id="invTotal">$0.00</span></div></div>`;
+        addLine();
+      }
+      c.querySelectorAll('input[type="date"]').forEach(el => { if (!el.value) el.value = todayISO(); });
+    }
+    function addLine() {
+      lineCount++;
+      const id = `li${lineCount}`;
+      const div = document.createElement("div");
+      div.className = "line-item";
+      div.id = id;
+      div.innerHTML = `<input type="text" placeholder="Description" class="li-desc" oninput="calcTotal()"><input type="number" placeholder="0.00" class="line-item-price li-price" oninput="calcTotal()" min="0" step="0.01"><button class="line-item-remove" type="button" onclick="removeLine('${id}')">x</button>`;
+      document.getElementById("lineItems").appendChild(div);
+    }
+    function removeLine(id) {
+      const el = document.getElementById(id);
+      if (el) el.remove();
+      calcTotal();
+    }
+    function calcTotal() {
+      let t = 0;
+      document.querySelectorAll(".li-price").forEach(p => { t += parseFloat(p.value) || 0; });
+      const el = document.getElementById("invTotal");
+      if (el) el.textContent = money(t);
+    }
+    function buildSigScreen() {
+      const clientName = V("clientName").trim();
+      document.getElementById("clientSigLabel").textContent = clientName ? `${clientName}'s Signature` : "Client Signature";
+      document.getElementById("useSavedRow").style.display = S.defaultSigData ? "flex" : "none";
+      document.getElementById("savedSigDisplay").style.display = "none";
+      document.getElementById("yourDrawBlock").style.display = "block";
+      usingDefaultSig = false;
+      setTimeout(() => {
+        resizeCanvas(document.getElementById("yourSigCanvas"));
+        resizeCanvas(document.getElementById("clientSigCanvas"));
+      }, 80);
+    }
+    function applySavedSig() {
+      usingDefaultSig = true;
+      document.getElementById("yourDrawBlock").style.display = "none";
+      document.getElementById("savedSigDisplay").style.display = "block";
+      document.getElementById("savedSigImg").src = S.defaultSigData;
+    }
+    function clearSavedSigUsed() {
+      usingDefaultSig = false;
+      document.getElementById("savedSigDisplay").style.display = "none";
+      document.getElementById("yourDrawBlock").style.display = "block";
+      setTimeout(() => resizeCanvas(document.getElementById("yourSigCanvas")), 60);
+    }
+    function buildDoneScreen() {
+      document.getElementById("doneSubText").innerHTML = `<strong>${CATS[category].name}</strong><br>for ${V("clientName")} is ready.`;
+    }
 
-function todayISO(){return new Date().toISOString().split('T')[0];}
+    function collectFields() {
+      const fields = {};
+      document.querySelectorAll(".field-input, .field-textarea, .field-select").forEach(el => {
+        if (el.id) fields[el.id] = el.value;
+      });
+      return fields;
+    }
+    function collectLines() {
+      const lines = [];
+      document.querySelectorAll(".line-item").forEach(item => {
+        const d = item.querySelector(".li-desc")?.value || "";
+        const p = item.querySelector(".li-price")?.value || "";
+        if (d || p) lines.push({ d, p });
+      });
+      return lines;
+    }
+    function shareWithClient() {
+      if (!S.email) {
+        showToast("Add your email in Settings first");
+        openSettings();
+        return;
+      }
+      const fields = collectFields();
+      const payload = { cat: category, fields, lines: collectLines(), yourEmail: S.email, bizName: S.bizName, tagline: S.tagline, accentColor: S.accentColor, bgColor: S.bgColor };
+      const key = Math.random().toString(36).slice(2, 10);
+      localStorage.setItem(`ss_doc_${key}`, JSON.stringify(payload));
+      const url = `${window.location.href.split("?")[0].split("#")[0]}?sign=${key}`;
+      const catName = CATS[category].name;
+      const msg = `Hi ${fields.clientName || "there"}, ${fields.yourName || S.bizName || "your contact"} sent you a ${catName} to sign.\n\nTap to open and sign:\n${url}`;
+      if (navigator.share) {
+        navigator.share({ title: `${catName} - Please Sign`, text: msg, url }).catch(() => copyMsg(msg));
+      } else {
+        copyMsg(msg);
+      }
+    }
+    function copyMsg(msg) {
+      if (navigator.clipboard) navigator.clipboard.writeText(msg).then(() => showToast("Message copied"));
+      else showToast("Copy this link from your address bar");
+    }
 
-// ── THEME ──
-function applyTheme(){
-  const r=document.documentElement;
-  const bg=S.bgColor, acc=S.accentColor;
-  r.style.setProperty('--bg',bg);
-  r.style.setProperty('--accent',acc);
-  r.style.setProperty('--accent-dim',hexToRgba(acc,0.13));
-  const lum=hexLum(bg);
-  if(lum<30){
-    r.style.setProperty('--surface',lighten(bg,8));
-    r.style.setProperty('--surface2',lighten(bg,14));
-    r.style.setProperty('--border',lighten(bg,20));
-    r.style.setProperty('--text','#f0ece4');
-    r.style.setProperty('--text-muted','#666260');
-    r.style.setProperty('--text-sub','#999390');
-  } else {
-    r.style.setProperty('--surface',darken(bg,6));
-    r.style.setProperty('--surface2',darken(bg,10));
-    r.style.setProperty('--border',darken(bg,18));
-    r.style.setProperty('--text','#1a1a1a');
-    r.style.setProperty('--text-muted','#777');
-    r.style.setProperty('--text-sub','#555');
-  }
-  updateBrandPreview();
-}
-function hexLum(hex){const[r,g,b]=hexToRgbArr(hex);return 0.299*r+0.587*g+0.114*b;}
-function hexToRgbArr(hex){const h=hex.replace('#','');return[parseInt(h.slice(0,2),16),parseInt(h.slice(2,4),16),parseInt(h.slice(4,6),16)];}
-function hexToRgba(hex,a){const[r,g,b]=hexToRgbArr(hex);return`rgba(${r},${g},${b},${a})`;}
-function lighten(hex,amt){const[r,g,b]=hexToRgbArr(hex);return`rgb(${Math.min(255,r+amt)},${Math.min(255,g+amt)},${Math.min(255,b+amt)})`;}
-function darken(hex,amt){const[r,g,b]=hexToRgbArr(hex);return`rgb(${Math.max(0,r-amt)},${Math.max(0,g-amt)},${Math.max(0,b-amt)})`;}
-function setBg(color,el){S.bgColor=color;persist();applyTheme();document.querySelectorAll('#bgColorRow .color-swatch').forEach(s=>s.classList.remove('active'));if(el)el.classList.add('active');}
-function setAccent(color,el){S.accentColor=color;persist();applyTheme();document.querySelectorAll('#accentColorRow .color-swatch').forEach(s=>s.classList.remove('active'));if(el)el.classList.add('active');}
-function markActiveSwatches(){
-  document.querySelectorAll('#bgColorRow .color-swatch').forEach(s=>s.classList.toggle('active',s.dataset.c===S.bgColor));
-  document.querySelectorAll('#accentColorRow .color-swatch').forEach(s=>s.classList.toggle('active',s.dataset.c===S.accentColor));
-}
+    function checkClientMode() {
+      const key = new URLSearchParams(window.location.search).get("sign");
+      if (!key) return false;
+      const raw = localStorage.getItem(`ss_doc_${key}`);
+      if (!raw) {
+        showClientError();
+        return true;
+      }
+      clientPayload = JSON.parse(raw);
+      if (clientPayload.accentColor) S.accentColor = clientPayload.accentColor;
+      if (clientPayload.bgColor) S.bgColor = clientPayload.bgColor;
+      applyTheme();
+      showClientView(clientPayload);
+      return true;
+    }
+    function showClientError() {
+      document.getElementById("clientWrap").classList.add("active");
+      document.getElementById("clientWrap").innerHTML = `<div style="display:grid;place-items:center;min-height:100dvh;text-align:center;padding:32px;"><div><h1 class="step-title">Link Not Found</h1><p class="done-sub">This signing link only works in the same browser where it was created.</p></div></div>`;
+    }
+    function showClientView(payload) {
+      const fields = payload.fields || {};
+      const catName = CATS[payload.cat]?.name || "Agreement";
+      const biz = payload.bizName || fields.yourName || "Simple Sign";
+      const wrap = document.getElementById("clientWrap");
+      wrap.classList.add("active");
+      document.getElementById("appHeader").style.display = "none";
+      document.getElementById("appProgress").style.display = "none";
+      document.getElementById("appMain").style.display = "none";
+      document.getElementById("bottomNav").style.display = "none";
+      wrap.innerHTML = `
+        <div style="position:sticky;top:0;z-index:3;background:var(--bg);border-bottom:1px solid var(--border);padding:14px 20px;">
+          <div class="logo">${biz}</div>
+          <div style="font-size:11px;color:var(--text-muted);letter-spacing:1px;margin-top:2px;">${catName.toUpperCase()}</div>
+        </div>
+        <div style="padding:24px 20px 180px;">
+          <div class="action-banner"><div class="action-banner-label">Action Required</div><div class="action-banner-text">Hi <strong>${fields.clientName || "Client"}</strong>, please review the details below and sign to complete this agreement.</div></div>
+          <div class="detail-card">${clientRows(payload)}</div>
+          <div class="field-group"><label class="field-label">Your Signature</label><div class="sig-container"><div class="sig-label-bar"><span>${fields.clientName || "Client"} Signature</span><button class="sig-clear" type="button" onclick="clearCanvas('clientOnlyCanvas')">Clear</button></div><canvas id="clientOnlyCanvas" class="sig-canvas"></canvas></div><div id="clientNoSigWarn" style="display:none;color:var(--danger);font-size:12px;text-align:center;margin-top:8px;">Please add your signature above</div></div>
+        </div>
+        <div style="position:fixed;left:0;right:0;bottom:0;z-index:4;background:var(--bg);border-top:1px solid var(--border);padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));">
+          <button class="btn-primary" id="clientSendBtn" type="button" onclick="doClientSubmit()" style="margin-bottom:10px;">Send My Signed Copy</button>
+          <button class="btn-ghost" id="clientDlBtn" type="button" onclick="doClientDownload()" disabled style="opacity:.38;cursor:not-allowed;">Download My Copy</button>
+          <div id="clientHint" style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:10px;">Sign above, then send to unlock your download</div>
+        </div>`;
+      setTimeout(() => initDrawCanvas("clientOnlyCanvas"), 80);
+    }
+    function clientRows(payload) {
+      const fields = payload.fields || {};
+      let rows = [
+        ["From", fields.yourName || payload.bizName],
+        ["Date", fmtDate(fields.docDate)]
+      ];
+      if (payload.cat === "basic") rows.push(["Title", fields.basicTitle], ["Purpose", fields.basicPurpose], ["Start", fmtDate(fields.basicStartDate)], ["End", fmtDate(fields.basicEndDate)], ["Amount", money(fields.basicAmount)], ["Terms", fields.basicTerms]);
+      else if (payload.cat === "car") rows.push(["Vehicle", fields.carMake], ["Pickup", fmtDate(fields.carPickup)], ["Return", fmtDate(fields.carReturn)], ["Daily Rate", money(fields.carRate)], ["Deposit", money(fields.carDeposit)]);
+      else if (payload.cat === "barber") rows.push(["Booth", fields.barberStation], ["Weekly Rent", money(fields.barberRate)], ["Start Date", fmtDate(fields.barberStartDate)], ["Schedule", fields.barberSchedule]);
+      else if (payload.cat === "photo") rows.push(["Service", fields.photoType], ["Shoot Date", fmtDate(fields.photoDate)], ["Location", fields.photoLocation], ["Deliverables", fields.photoDeliverables], ["Total Rate", money(fields.photoRate)], ["Deposit", money(fields.photoDeposit)]);
+      else if (payload.cat === "nda") rows.push(["Purpose", fields.ndaPurpose], ["Duration", fields.ndaDuration], ["Jurisdiction", fields.ndaJurisdiction]);
+      else {
+        rows.push([payload.cat === "invoice" ? "Invoice #" : "Receipt #", fields.invNumber], ["Date", fmtDate(fields.invDue)], ["Notes", fields.invNotes]);
+        let total = 0;
+        payload.lines.forEach(li => { total += parseFloat(li.p) || 0; rows.push([li.d || "Item", money(li.p)]); });
+        rows.push(["Total", money(total)]);
+      }
+      return rows.filter(r => r[1]).map(([l, v]) => `<div class="detail-row"><span class="detail-row-label">${l}</span><span class="detail-row-val">${v}</span></div>`).join("");
+    }
+    function doClientSubmit() {
+      const canvas = document.getElementById("clientOnlyCanvas");
+      if (isCanvasBlank(canvas)) {
+        document.getElementById("clientNoSigWarn").style.display = "block";
+        return;
+      }
+      document.getElementById("clientNoSigWarn").style.display = "none";
+      clientSigData = canvasToWhitePNG(canvas);
+      clientPdfDoc = buildPDF(clientPayload, clientSigData, true);
+      doClientShare();
+    }
+    function doClientShare() {
+      if (!clientSigData) return doClientSubmit();
+      const fields = clientPayload.fields || {};
+      const catName = CATS[clientPayload.cat]?.name || "Agreement";
+      const msg = `Hi, please find my signed copy of the ${catName} attached.\n\nSigned by: ${fields.clientName || "Client"}\nDate: ${fmtDate(todayISO())}\n\nAttach the PDF that just downloaded.`;
+      clientPdfDoc.save(`signed_${clientPayload.cat}_${(fields.clientName || "client").replace(/\s+/g, "_")}.pdf`);
+      if (navigator.share) navigator.share({ title: `Signed: ${catName}`, text: msg }).catch(() => {});
+      else window.location.href = `mailto:${clientPayload.yourEmail || ""}?subject=${encodeURIComponent(`Signed: ${catName}`)}&body=${encodeURIComponent(msg)}`;
+      const dl = document.getElementById("clientDlBtn");
+      dl.disabled = false;
+      dl.style.opacity = "1";
+      dl.style.cursor = "pointer";
+      document.getElementById("clientHint").textContent = "Sent - your download is unlocked";
+      showToast("Download unlocked");
+    }
+    function doClientDownload() {
+      if (clientPdfDoc) clientPdfDoc.save(`signed_${clientPayload.cat}_${(clientPayload.fields?.clientName || "client").replace(/\s+/g, "_")}.pdf`);
+    }
 
-// ── SETTINGS ──
-function openSettings(){loadSettingsUI();document.getElementById('settingsOverlay').classList.add('open');}
-function closeSettings(){document.getElementById('settingsOverlay').classList.remove('open');if(S.bizName)document.getElementById('yourName').value=S.bizName;updateBrandPreview();markActiveSwatches();}
-function overlayClickClose(e,id){if(e.target===document.getElementById(id))document.getElementById(id).classList.remove('open');}
-function loadSettingsUI(){
-  document.getElementById('sBizName').value=S.bizName;
-  document.getElementById('sEmail').value=S.email||'';
-  document.getElementById('sTagline').value=S.tagline||'';
-  document.querySelectorAll('#logoStyleGrid .style-pill').forEach(p=>p.classList.toggle('active',p.dataset.v===(S.logoStyle||'split')));
-  updateBrandPreview();updateSettingsSigThumb();markActiveSwatches();
-}
-function updateBrandPreview(){
-  const name=S.bizName||'simplesign', style=S.logoStyle||'split';
-  let a,b;
-  if(name.includes(' ')){const i=name.lastIndexOf(' ');a=name.slice(0,i);b=name.slice(i+1);}
-  else{const m=Math.ceil(name.length/2);a=name.slice(0,m);b=name.slice(m);}
-  const sp=name.includes(' ')?' ':'';
-  let html='';
-  if(style==='split') html=`<span>${a}${sp}</span><span class="bp-accent">${b}</span>`;
-  else if(style==='end') html=`<span>${a}${sp}</span><span class="bp-accent">${b}</span>`;
-  else if(style==='start') html=`<span class="bp-accent">${a}${sp}</span><span>${b}</span>`;
-  else if(style==='full') html=`<span class="bp-accent">${name}</span>`;
-  const preview=document.getElementById('brandPreview');
-  const header=document.getElementById('headerLogo');
-  if(preview)preview.innerHTML=html;
-  if(header)header.innerHTML=html;
-  const tagEl=document.getElementById('taglinePreview');
-  if(tagEl)tagEl.textContent=S.tagline||'';
-}
-function setLogoStyle(style,el){S.logoStyle=style;persist();updateBrandPreview();document.querySelectorAll('#logoStyleGrid .style-pill').forEach(p=>p.classList.remove('active'));if(el)el.classList.add('active');}
-function updateSettingsSigThumb(){
-  const thumb=document.getElementById('settingsSigThumb');
-  thumb.innerHTML=S.defaultSigData?`<img src="${S.defaultSigData}" alt="Saved signature">`:'<span class="no-sig">No signature saved yet</span>';
-}
+    function fmtDate(s) {
+      if (!s) return "";
+      const parts = s.split("-");
+      if (parts.length !== 3) return s;
+      const [y, m, d] = parts;
+      const names = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+      return `${names[parseInt(m, 10) - 1]} ${parseInt(d, 10)}, ${y}`;
+    }
+    function generatePDF() {
+      const payload = { cat: category, fields: collectFields(), lines: collectLines(), bizName: S.bizName, accentColor: S.accentColor, bgColor: S.bgColor };
+      const yourSig = usingDefaultSig ? S.defaultSigData : (!isCanvasBlank(document.getElementById("yourSigCanvas")) ? canvasToWhitePNG(document.getElementById("yourSigCanvas")) : "");
+      const clientSig = !isCanvasBlank(document.getElementById("clientSigCanvas")) ? canvasToWhitePNG(document.getElementById("clientSigCanvas")) : "";
+      const doc = buildPDF(payload, clientSig, false, yourSig);
+      doc.save(`${category}_${(V("clientName") || "client").replace(/\s+/g, "_")}_${V("docDate")}.pdf`);
+      showToast("PDF downloaded");
+    }
+    function buildPDF(payload, clientSignature, clientOnly, yourSignature = "") {
+      const { jsPDF } = window.jspdf;
+      const doc = new jsPDF({ orientation: "portrait", unit: "mm", format: "a4" });
+      const W = 210, H = 297, mg = 20, cW = W - mg * 2;
+      const fields = payload.fields || {};
+      const catName = CATS[payload.cat]?.name || "Agreement";
+      const biz = payload.bizName || fields.yourName || "Simple Sign";
+      const [ar, ag, ab] = hexToRgbArr(payload.accentColor || S.accentColor);
+      const [br, bg, bb] = hexToRgbArr(payload.bgColor || S.bgColor);
+      let y = 42;
+      doc.setFillColor(br, bg, bb); doc.rect(0, 0, W, 32, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(17); doc.setTextColor(240, 236, 228); doc.text("simplesign", mg, 14);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(ar, ag, ab); doc.text(biz.toUpperCase(), mg, 21);
+      doc.setFontSize(7); doc.setTextColor(150, 145, 140); doc.text(catName.toUpperCase(), W - mg, 13, { align: "right" }); doc.text(fmtDate(fields.docDate), W - mg, 20, { align: "right" });
+      doc.setFillColor(ar, ag, ab); doc.rect(0, 32, W, 1.5, "F");
+      doc.setFillColor(247, 246, 244); doc.roundedRect(mg, y, cW, 20, 2, 2, "F");
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(140, 135, 130); doc.text("PARTY A", mg + 6, y + 7); doc.text("PARTY B", W / 2 + 4, y + 7);
+      doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(28, 26, 24); doc.text(fields.yourName || "-", mg + 6, y + 15); doc.text(fields.clientName || "-", W / 2 + 4, y + 15);
+      y += 30;
+      y = renderPdfBody(doc, y, mg, cW, W, payload, [ar, ag, ab]);
+      y = Math.max(y + 12, H - 72);
+      doc.setDrawColor(200, 198, 195); doc.line(mg, y, W - mg, y); y += 7;
+      doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(140, 135, 130); doc.text("SIGNATURES", mg, y); y += 7;
+      const sW = (cW - 10) / 2;
+      if (yourSignature && !clientOnly) doc.addImage(yourSignature, "PNG", mg, y, sW, 16);
+      if (clientSignature) doc.addImage(clientSignature, "PNG", mg + sW + 10, y, sW, 16);
+      y += 18;
+      doc.setDrawColor(28, 26, 24); doc.line(mg, y, mg + sW, y); doc.line(mg + sW + 10, y, W - mg, y); y += 4;
+      doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(140, 135, 130); doc.text(fields.yourName || "Authorized Party", mg, y); doc.text(fields.clientName || "Client", mg + sW + 10, y);
+      doc.setFillColor(br, bg, bb); doc.rect(0, H - 10, W, 10, "F");
+      doc.setFontSize(7); doc.setTextColor(110, 105, 100); doc.text(`Generated by Simple Sign - ${fmtDate(fields.docDate || todayISO())}`, W / 2, H - 4, { align: "center" });
+      return doc;
+    }
+    function renderPdfBody(doc, y, mg, cW, W, payload, accent) {
+      const fields = payload.fields || {};
+      function section(title) { doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(140, 135, 130); doc.text(title.toUpperCase(), mg, y); y += 7; }
+      function row(label, value) {
+        if (!value || y > 245) return;
+        doc.setFont("helvetica", "bold"); doc.setFontSize(8); doc.setTextColor(140, 135, 130); doc.text(label, mg, y);
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.setTextColor(28, 26, 24);
+        const lines = doc.splitTextToSize(String(value), cW - 62);
+        doc.text(lines, mg + 62, y);
+        y += Math.max(lines.length * 5, 7);
+      }
+      section(CATS[payload.cat]?.name || "Agreement");
+      if (payload.cat === "basic") {
+        row("Title", fields.basicTitle); row("Purpose", fields.basicPurpose); row("Start Date", fmtDate(fields.basicStartDate)); row("End Date", fmtDate(fields.basicEndDate)); row("Amount", money(fields.basicAmount)); row("Terms", fields.basicTerms);
+      } else if (payload.cat === "car") {
+        row("Vehicle", fields.carMake); row("Plate", fields.carPlate); row("Pickup", fmtDate(fields.carPickup)); row("Return", fmtDate(fields.carReturn)); row("Daily Rate", money(fields.carRate)); row("Deposit", money(fields.carDeposit)); row("Terms", fields.carTerms);
+      } else if (payload.cat === "barber") {
+        row("Station", fields.barberStation); row("Weekly Rent", money(fields.barberRate)); row("Start Date", fmtDate(fields.barberStartDate)); row("Schedule", fields.barberSchedule); row("Terms", fields.barberTerms);
+      } else if (payload.cat === "photo") {
+        row("Service", fields.photoType); row("Shoot Date", fmtDate(fields.photoDate)); row("Location", fields.photoLocation); row("Coverage", fields.photoHours); row("Deliverables", fields.photoDeliverables); row("Total Rate", money(fields.photoRate)); row("Deposit", money(fields.photoDeposit)); row("Terms", fields.photoTerms);
+      } else if (payload.cat === "nda") {
+        row("Purpose", fields.ndaPurpose); row("Duration", fields.ndaDuration); row("Jurisdiction", fields.ndaJurisdiction); row("Scope", fields.ndaScope);
+      } else {
+        row(payload.cat === "invoice" ? "Invoice #" : "Receipt #", fields.invNumber); row("Date", fmtDate(fields.invDue)); row("Notes", fields.invNotes);
+        let total = 0;
+        (payload.lines || []).forEach(li => { total += parseFloat(li.p) || 0; row(li.d || "Item", money(li.p)); });
+        doc.setFillColor(...accent); doc.rect(mg, y, cW, 10, "F"); doc.setFont("helvetica", "bold"); doc.setFontSize(10); doc.setTextColor(28, 26, 24); doc.text("TOTAL", mg + 4, y + 7); doc.text(money(total), W - mg - 4, y + 7, { align: "right" }); y += 14;
+      }
+      return y;
+    }
 
-// ── SIG MODAL ──
-let sigModalCtx,sigModalDrawing=false;
-function openSigModal(caller){
-  sigModalCaller=caller;
-  document.getElementById('sigModalOverlay').classList.add('open');
-  const canvas=document.getElementById('sigModalCanvas');
-  setTimeout(()=>{
-    const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;
-    canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
-    sigModalCtx=canvas.getContext('2d');sigModalCtx.scale(dpr,dpr);
-    sigModalCtx.strokeStyle='#1a1a1a';sigModalCtx.lineWidth=2.8;sigModalCtx.lineCap='round';sigModalCtx.lineJoin='round';
-    sigModalCtx.fillStyle='#ffffff';sigModalCtx.fillRect(0,0,canvas.width,canvas.height);
-  },50);
-  setupSigModal(canvas);
-}
-function setupSigModal(canvas){
-  canvas.onmousedown=canvas.ontouchstart=(e)=>{e.preventDefault();sigModalDrawing=true;const pos=getSigPos(e,canvas);sigModalCtx.beginPath();sigModalCtx.moveTo(pos.x,pos.y);};
-  canvas.onmousemove=canvas.ontouchmove=(e)=>{if(!sigModalDrawing)return;e.preventDefault();const pos=getSigPos(e,canvas);sigModalCtx.strokeStyle='#1a1a1a';sigModalCtx.lineTo(pos.x,pos.y);sigModalCtx.stroke();sigModalCtx.beginPath();sigModalCtx.moveTo(pos.x,pos.y);};
-  canvas.onmouseup=canvas.ontouchend=()=>{sigModalDrawing=false;};
-}
-function getSigPos(e,canvas){const rect=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-rect.left,y:e.touches[0].clientY-rect.top};return{x:e.clientX-rect.left,y:e.clientY-rect.top};}
-function clearSigModal(){const canvas=document.getElementById('sigModalCanvas');const rect=canvas.getBoundingClientRect();sigModalCtx.fillStyle='#ffffff';sigModalCtx.fillRect(0,0,rect.width,rect.height);}
-function saveSigModal(){
-  const canvas=document.getElementById('sigModalCanvas');
-  S.defaultSigData=canvas.toDataURL('image/png');persist();updateSettingsSigThumb();closeSigModal();showToast('Signature saved');
-  if(sigModalCaller==='step')applySavedSig();
-}
-function closeSigModal(){document.getElementById('sigModalOverlay').classList.remove('open');}
-
-// ── SIG STEP ──
-function buildSigScreen(){
-  const clientName=document.getElementById('clientName').value.trim();
-  if(clientName)document.getElementById('clientSigLabel').textContent=`${clientName}'s Signature`;
-  document.getElementById('useSavedRow').style.display=S.defaultSigData?'block':'none';
-  usingDefaultSig=false;
-  document.getElementById('savedSigDisplay').style.display='none';
-  document.getElementById('yourDrawBlock').style.display='block';
-  setTimeout(()=>{resizeCanvas(document.getElementById('yourSigCanvas'));resizeCanvas(document.getElementById('clientSigCanvas'));},120);
-}
-function applySavedSig(){usingDefaultSig=true;document.getElementById('yourDrawBlock').style.display='none';document.getElementById('savedSigDisplay').style.display='block';document.getElementById('savedSigImg').src=S.defaultSigData;}
-function clearSavedSigUsed(){usingDefaultSig=false;document.getElementById('savedSigDisplay').style.display='none';document.getElementById('yourDrawBlock').style.display='block';setTimeout(()=>resizeCanvas(document.getElementById('yourSigCanvas')),60);}
-function resizeCanvas(canvas){const rect=canvas.getBoundingClientRect(),dpr=window.devicePixelRatio||1;canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;const ctx=canvas.getContext('2d');ctx.scale(dpr,dpr);}
-function initDrawCanvas(id){
-  const canvas=document.getElementById(id);let drawing=false;
-  function pos(e){const r=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};}
-  const start=(e)=>{e.preventDefault();drawing=true;const p=pos(e);const ctx=canvas.getContext('2d');ctx.beginPath();ctx.moveTo(p.x,p.y);};
-  const draw=(e)=>{if(!drawing)return;e.preventDefault();const p=pos(e);const ctx=canvas.getContext('2d');ctx.strokeStyle='#1a1a1a';ctx.lineWidth=2.5;ctx.lineCap='round';ctx.lineJoin='round';ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);};
-  const stop=()=>{drawing=false;};
-  canvas.addEventListener('mousedown',start);canvas.addEventListener('mousemove',draw);canvas.addEventListener('mouseup',stop);canvas.addEventListener('mouseleave',stop);
-  canvas.addEventListener('touchstart',start,{passive:false});canvas.addEventListener('touchmove',draw,{passive:false});canvas.addEventListener('touchend',stop);
-}
-function clearCanvas(id){const canvas=document.getElementById(id);canvas.getContext('2d').clearRect(0,0,canvas.width,canvas.height);}
-function isCanvasBlank(canvas){const data=canvas.getContext('2d').getImageData(0,0,canvas.width,canvas.height).data;for(let i=3;i<data.length;i+=4){if(data[i]>10)return false;}return true;}
-function canvasToWhitePNG(canvas){const flat=document.createElement('canvas');flat.width=canvas.width;flat.height=canvas.height;const ctx=flat.getContext('2d');ctx.fillStyle='#ffffff';ctx.fillRect(0,0,flat.width,flat.height);ctx.drawImage(canvas,0,0);return flat.toDataURL('image/png');}
-
-// ── NAV ──
-function goNext(){
-  if(step===1){if(!category){showToast('Select a document type');return;}step=2;}
-  else if(step===2){if(!document.getElementById('yourName').value.trim()){showToast('Enter your name');return;}if(!document.getElementById('clientName').value.trim()){showToast('Enter client name');return;}buildDetailsScreen();step=3;}
-  else if(step===3){step=4;buildSigScreen();}
-  else if(step===4){step=5;buildDoneScreen();}
-  else return;
-  showScreen(step);updateNav();updateProgress();
-}
-function goBack(){if(step<=1)return;step--;showScreen(step);updateNav();updateProgress();}
-function showScreen(n){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById('screen-'+n).classList.add('active');document.querySelector('.main').scrollTop=0;}
-function updateNav(){
-  document.getElementById('backBtn').style.display=step===1?'none':'flex';
-  const bn=document.getElementById('bottomNav');
-  if(step===5){bn.style.display='none';return;}
-  bn.style.display='flex';
-  document.getElementById('nextBtn').textContent=step===4?'Review →':'Continue →';
-}
-function updateProgress(){document.getElementById('progressFill').style.width=(((step-1)/4)*100)+'%';}
-function startOver(){
-  step=1;category=null;usingDefaultSig=false;
-  document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));
-  document.getElementById('clientName').value='';
-  document.getElementById('yourName').value=S.bizName||'';
-  document.getElementById('docDate').value=todayISO();
-  clearCanvas('yourSigCanvas');clearCanvas('clientSigCanvas');
-  document.getElementById('savedSigDisplay').style.display='none';
-  document.getElementById('yourDrawBlock').style.display='block';
-  showScreen(1);document.getElementById('bottomNav').style.display='flex';
-  updateNav();updateProgress();
-}
-
-// ── CATEGORIES ──
-const CATS={car:{name:'Car Rental Agreement'},barber:{name:'Barber Booth Agreement'},photo:{name:'Photography & Videography Agreement'},nda:{name:'Non-Disclosure Agreement'},invoice:{name:'Invoice'},receipt:{name:'Receipt'}};
-function selectCategory(cat){category=cat;document.querySelectorAll('.cat-card').forEach(c=>c.classList.remove('selected'));document.getElementById('cat-'+cat).classList.add('selected');}
-
-// ── DETAILS ──
-function buildDetailsScreen(){
-  const titles={car:'Vehicle Details',barber:'Booth Details',photo:'Project Details',nda:'Agreement Scope',invoice:'Invoice Items',receipt:'Payment Details'};
-  document.getElementById('detailsTitle').textContent=titles[category];
-  const c=document.getElementById('detailsFields');c.innerHTML='';
-  if(category==='car'){c.innerHTML=F('carMake','text','Vehicle Make & Model','e.g. Toyota Camry 2022')+F('carPlate','text','License Plate','')+F('carPickup','date','Pickup Date','')+F('carReturn','date','Return Date','')+F('carMileageOut','number','Mileage at Pickup','0')+F('carDeposit','text','Security Deposit ($)','0.00')+F('carRate','text','Daily Rate ($)','0.00')+FTA('carTerms','Additional Terms','Renter is responsible for all traffic violations, tolls, fuel, and any damage during the rental period. Vehicle must be returned in the same condition.');}
-  else if(category==='barber'){c.innerHTML=F('barberStation','text','Station / Booth Number','')+F('barberRate','text','Weekly Booth Rent ($)','0.00')+F('barberStartDate','date','Start Date','')+F('barberSchedule','text','Work Schedule','e.g. Tue–Sat, 9am–6pm')+FTA('barberTerms','Terms & Responsibilities','Barber agrees to maintain a clean station, supply their own tools, follow all shop policies, and pay booth rent on time. Failure to comply may result in termination of this agreement.');}
-  else if(category==='photo'){c.innerHTML=FSEL('photoType','Service Type',['Photography','Videography','Photography & Videography'])+F('photoDate','date','Shoot Date','')+F('photoLocation','text','Location','')+F('photoHours','text','Hours of Coverage','e.g. 4 hours')+F('photoDeliverables','text','Deliverables','e.g. 100 edited photos, 3-min highlight reel')+F('photoDelivery','text','Delivery Timeline','e.g. 2–3 weeks after shoot date')+F('photoRate','text','Total Rate ($)','0.00')+F('photoDeposit','text','Deposit Paid ($)','0.00')+FSEL('photoUsage','Usage Rights',['Personal Use Only','Commercial Use Included','Social Media Use Only'])+FTA('photoTerms','Additional Terms','Client agrees not to edit, alter, or repost media without credit. Photographer retains all creative and intellectual property rights. A non-refundable deposit is required to hold the date.');}
-  else if(category==='nda'){c.innerHTML=F('ndaPurpose','text','Purpose / Project','e.g. Business development discussion')+FTA('ndaScope','Confidential Information Includes','Business plans, financial data, client lists, trade secrets, pricing, and any proprietary business information shared between parties.')+F('ndaDuration','text','Duration of Agreement','e.g. 2 years from date of signing')+F('ndaJurisdiction','text','Governing Law / State','e.g. State of California')+FTA('ndaExclusions','Exclusions from Confidentiality','Information already in the public domain or independently developed by the receiving party without use of any confidential information.');}
-  else if(category==='invoice'||category==='receipt'){
-    const lbl=category==='invoice'?'Invoice':'Receipt';
-    c.innerHTML=F('invNumber','text',`${lbl} Number`,'#001')+F('invDue','date',category==='invoice'?'Due Date':'Payment Date','')+F('invNotes','text','Project / Notes','')+`<div class="field-group"><label class="field-label">Line Items</label><div class="line-items" id="lineItems"></div><button class="add-line-btn" onclick="addLine()">+ Add Item</button><div class="total-row"><span class="total-label">Total</span><span class="total-amount" id="invTotal">$0.00</span></div></div>`;
-    addLine();
-  }
-  c.querySelectorAll('input[type="date"]').forEach(el=>{if(!el.value)el.value=todayISO();});
-}
-let lineCount=0;
-function addLine(){lineCount++;const id='li'+lineCount;const div=document.createElement('div');div.className='line-item';div.id=id;div.innerHTML=`<input type="text" placeholder="Description" class="li-desc" oninput="calcTotal()"><input type="number" placeholder="0.00" class="line-item-price li-price" oninput="calcTotal()" min="0" step="0.01"><span class="line-item-remove" onclick="removeLine('${id}')">×</span>`;document.getElementById('lineItems').appendChild(div);}
-function removeLine(id){const el=document.getElementById(id);if(el){el.remove();calcTotal();}}
-function calcTotal(){let t=0;document.querySelectorAll('.li-price').forEach(p=>{t+=parseFloat(p.value)||0;});const el=document.getElementById('invTotal');if(el)el.textContent='$'+t.toFixed(2);}
-function F(id,type,label,ph){return`<div class="field-group"><label class="field-label">${label}</label><input class="field-input" id="${id}" type="${type}" placeholder="${ph}" autocomplete="off"></div>`;}
-function FTA(id,label,def){return`<div class="field-group"><label class="field-label">${label}</label><textarea class="field-textarea" id="${id}">${def}</textarea></div>`;}
-
-function FSEL(id,label,opts){return`<div class="field-group"><label class="field-label">${label}</label><select class="field-select" id="${id}">${opts.map(o=>`<option>${o}</option>`).join('')}</select></div>`;}
-function V(id){const el=document.getElementById(id);return el?(el.value||’’):’’;}
-
-// ── DONE ──
-function buildDoneScreen(){const c=V(‘clientName’);document.getElementById(‘doneSubText’).innerHTML=`<strong>${CATS[category].name}</strong><br>for ${c} — download your PDF below.`;}
-
-// ── SHARE WITH CLIENT — short key via localStorage ──
-function shareWithClient(){
-if(!S.email){showToast(‘Add your email in Settings first’);openSettings();return;}
-
-const fields={};
-document.querySelectorAll(’.field-input,.field-textarea,.field-select’).forEach(el=>{if(el.id)fields[el.id]=el.value;});
-const lines=[];
-document.querySelectorAll(’.line-item’).forEach(item=>{
-const desc=item.querySelector(’.li-desc’)?.value||’’;
-const price=item.querySelector(’.li-price’)?.value||’’;
-if(desc||price)lines.push({d:desc,p:price});
-});
-
-const payload={cat:category,fields,lines,yourEmail:S.email,bizName:S.bizName,tagline:S.tagline||’’,logoStyle:S.logoStyle||‘split’,accentColor:S.accentColor,bgColor:S.bgColor};
-
-// Short 8-char key stored in localStorage
-const key=Math.random().toString(36).slice(2,10);
-try{localStorage.setItem(‘ss_doc_’+key,JSON.stringify(payload));}
-catch(e){showToast(‘Could not create link’);return;}
-
-const base=window.location.href.split(’?’)[0].split(’#’)[0];
-const url=base+’?sign=’+key;
-
-const clientName=fields.clientName||‘there’;
-const catName=CATS[category]?.name||‘Agreement’;
-const bizDisplay=S.bizName||fields.yourName||‘your contact’;
-const msg=`Hi ${clientName}, ${bizDisplay} sent you a ${catName} to sign.\n\nTap to open and sign:\n${url}`;
-
-if(navigator.share){
-navigator.share({title:`${catName} — Please Sign`,text:msg,url}).catch(()=>copyMsg(msg));
-} else {
-copyMsg(msg);
-}
-}
-function copyMsg(msg){
-if(navigator.clipboard){navigator.clipboard.writeText(msg).then(()=>showToast(‘Message copied — paste into iMessage or email’)).catch(()=>fallbackCopy(msg));}
-else fallbackCopy(msg);
-}
-function fallbackCopy(text){const ta=document.createElement(‘textarea’);ta.value=text;ta.style.cssText=‘position:fixed;opacity:0;’;document.body.appendChild(ta);ta.select();try{document.execCommand(‘copy’);showToast(‘Message copied — paste into iMessage or email’);}catch(e){showToast(‘Copy the link manually’);}document.body.removeChild(ta);}
-
-// ── CLIENT MODE ──
-function checkClientMode(){
-const params=new URLSearchParams(window.location.search);
-const key=params.get(‘sign’);
-if(!key)return false;
-
-// Clean URL immediately
-history.replaceState(null,’’,window.location.pathname);
-
-const raw=localStorage.getItem(‘ss_doc_’+key);
-if(!raw){showClientError();return true;}
-
-try{
-const payload=JSON.parse(raw);
-// Apply branding from sender
-if(payload.accentColor)S.accentColor=payload.accentColor;
-if(payload.bgColor)S.bgColor=payload.bgColor;
-if(payload.bizName)S.bizName=payload.bizName;
-if(payload.tagline)S.tagline=payload.tagline;
-if(payload.logoStyle)S.logoStyle=payload.logoStyle;
-applyTheme();
-showClientView(payload);
-}catch(e){showClientError();}
-return true;
-}
-
-function showClientError(){
-const wrap=document.getElementById(‘clientWrap’);
-wrap.classList.add(‘active’);
-wrap.innerHTML=`<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100dvh;text-align:center;padding:40px 24px;background:var(--bg);">
-<div style="font-size:48px;margin-bottom:20px;">🔗</div>
-<div style="font-family:'DM Serif Display',serif;font-size:26px;color:var(--text);margin-bottom:12px;">Link Not Found</div>
-<div style="font-size:14px;color:var(--text-muted);line-height:1.6;max-width:280px;">This link only works on the same device and browser it was created on. Ask the sender to resend.</div>
-
-  </div>`;
-}
-
-function showClientView(payload){
-const fields=payload.fields||{};
-const catName=CATS[payload.cat]?.name||‘Agreement’;
-const bizName=payload.bizName||fields.yourName||‘Simple Sign’;
-const clientName=fields.clientName||’’;
-const docDate=fields.docDate||’’;
-
-// Build logo HTML
-const name=bizName, style=payload.logoStyle||‘split’;
-let a,b;
-if(name.includes(’ ‘)){const i=name.lastIndexOf(’ ‘);a=name.slice(0,i);b=name.slice(i+1);}
-else{const m=Math.ceil(name.length/2);a=name.slice(0,m);b=name.slice(m);}
-const sp=name.includes(’ ‘)?’ ‘:’’;
-let logoHtml=’’;
-if(style===‘full’) logoHtml=`<span style="color:var(--accent)">${name}</span>`;
-else if(style===‘start’) logoHtml=`<span style="color:var(--accent)">${a}${sp}</span><span>${b}</span>`;
-else logoHtml=`<span>${a}${sp}</span><span style="color:var(--accent)">${b}</span>`;
-
-// Build full client view HTML into the empty wrapper
-const wrap=document.getElementById(‘clientWrap’);
-wrap.innerHTML=`<div style="background:var(--bg);border-bottom:1px solid var(--border);padding:14px 20px;position:sticky;top:0;z-index:10;"> <div style="font-family:'DM Serif Display',serif;font-size:20px;color:var(--text);">${logoHtml}</div> <div style="font-size:11px;color:var(--text-muted);margin-top:2px;letter-spacing:1px;">${catName.toUpperCase()}</div> </div> <div id="clientBody" style="padding:24px 20px 180px;"></div> <div style="position:fixed;bottom:0;left:0;right:0;padding:12px 20px;padding-bottom:max(12px,env(safe-area-inset-bottom));background:var(--bg);border-top:1px solid var(--border);z-index:10;"> <button id="clientSendBtn" onclick="doClientShare()" style="width:100%;background:var(--accent);color:#0a0a0a;border:none;border-radius:11px;padding:16px;font-family:'DM Sans',sans-serif;font-size:15px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:10px;"> <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#0a0a0a" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12v8a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8"/><polyline points="16 6 12 2 8 6"/><line x1="12" y1="2" x2="12" y2="15"/></svg> Send My Signed Copy </button> <button id="clientDlBtn" onclick="doClientDownload()" disabled style="width:100%;background:var(--surface);color:var(--text-muted);border:1px solid var(--border);border-radius:11px;padding:15px;font-family:'DM Sans',sans-serif;font-size:15px;cursor:not-allowed;opacity:0.38;transition:all 0.3s;display:flex;align-items:center;justify-content:center;gap:8px;"> <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg> Download My Copy </button> <div id="clientHint" style="font-size:11px;color:var(--text-muted);text-align:center;margin-top:10px;">Send first to unlock your download</div> </div>`;
-
-// Now populate clientBody
-
-// Build body
-let bodyHtml=`<div class="action-banner"> <div class="action-banner-label">Action Required</div> <div class="action-banner-text">Hi <strong>${clientName}</strong>, please review the details below and sign to complete this agreement.</div> </div> <div class="detail-card"> <div class="detail-row"><span class="detail-row-label">From</span><span class="detail-row-val">${fields.yourName||bizName}</span></div> <div class="detail-row"><span class="detail-row-label">Date</span><span class="detail-row-val">${fmtDate(docDate)}</span></div> ${buildDetailRows(payload)} </div> <div style="margin-bottom:16px;"> <div style="font-size:11px;letter-spacing:1.5px;text-transform:uppercase;color:var(--text-muted);font-weight:500;margin-bottom:8px;">Your Signature</div> <div class="sig-container" style="margin-bottom:4px;"> <div class="sig-label-bar"> <span>${clientName||'Client'} Signature</span> <span class="sig-clear" onclick="clearClientCanvas()">Clear</span> </div> <canvas id="clientOnlyCanvas" class="sig-canvas"></canvas> </div> <div id="clientNoSigWarn" style="display:none;font-size:12px;color:#e05c5c;text-align:center;margin-top:6px;">Please add your signature above</div> </div>`;
-document.getElementById(‘clientBody’).innerHTML=bodyHtml;
-
-// Store payload for submit
-_clientPayload=payload;
-
-// Show client wrap, hide app
-document.getElementById(‘clientWrap’).classList.add(‘active’);
-document.getElementById(‘appHeader’).style.display=‘none’;
-document.getElementById(‘appProgress’).style.display=‘none’;
-document.getElementById(‘appMain’).style.display=‘none’;
-document.getElementById(‘bottomNav’).style.display=‘none’;
-
-// Update hint
-document.getElementById(‘clientHint’).textContent=‘Sign above, then send to unlock your download’;
-
-// Wire submit button to validate first
-document.getElementById(‘clientSendBtn’).onclick=doClientSubmit;
-
-// Init canvas
-setTimeout(()=>{
-const canvas=document.getElementById(‘clientOnlyCanvas’);
-if(!canvas)return;
-const dpr=window.devicePixelRatio||1;
-const rect=canvas.getBoundingClientRect();
-canvas.width=rect.width*dpr;canvas.height=rect.height*dpr;
-canvas.getContext(‘2d’).scale(dpr,dpr);
-initClientCanvas(canvas);
-},100);
-}
-
-function buildDetailRows(payload){
-const fields=payload.fields||{},lines=payload.lines||[],cat=payload.cat;
-const row=(label,value)=>value?`<div class="detail-row"><span class="detail-row-label">${label}</span><span class="detail-row-val">${value}</span></div>`:’’;
-let html=’’;
-if(cat===‘car’){html+=row(‘Vehicle’,fields.carMake)+row(‘Pickup’,fmtDate(fields.carPickup))+row(‘Return’,fmtDate(fields.carReturn))+row(‘Daily Rate’,’$’+fields.carRate)+row(‘Deposit’,’$’+fields.carDeposit);}
-else if(cat===‘barber’){html+=row(‘Booth’,fields.barberStation)+row(‘Weekly Rent’,’$’+fields.barberRate)+row(‘Start Date’,fmtDate(fields.barberStartDate))+row(‘Schedule’,fields.barberSchedule);}
-else if(cat===‘photo’){html+=row(‘Service’,fields.photoType)+row(‘Shoot Date’,fmtDate(fields.photoDate))+row(‘Location’,fields.photoLocation)+row(‘Deliverables’,fields.photoDeliverables)+row(‘Total Rate’,’$’+fields.photoRate)+row(‘Deposit’,’$’+fields.photoDeposit);const bal=(parseFloat(fields.photoRate)||0)-(parseFloat(fields.photoDeposit)||0);html+=row(‘Balance Due’,’$’+bal.toFixed(2));}
-else if(cat===‘nda’){html+=row(‘Purpose’,fields.ndaPurpose)+row(‘Duration’,fields.ndaDuration);}
-else if(cat===‘invoice’||cat===‘receipt’){
-const lbl=cat===‘invoice’?‘Invoice’:‘Receipt’;
-html+=row(lbl+’ #’,fields.invNumber)+row(‘Due Date’,fmtDate(fields.invDue));
-let total=0;
-lines.forEach(li=>{html+=row(li.d,’$’+(parseFloat(li.p)||0).toFixed(2));total+=parseFloat(li.p)||0;});
-html+=row(‘Total’,’$’+total.toFixed(2));
-}
-return html;
-}
-
-function initClientCanvas(canvas){
-let drawing=false;const ctx=canvas.getContext(‘2d’);
-function pos(e){const r=canvas.getBoundingClientRect();if(e.touches)return{x:e.touches[0].clientX-r.left,y:e.touches[0].clientY-r.top};return{x:e.clientX-r.left,y:e.clientY-r.top};}
-canvas.addEventListener(‘mousedown’,e=>{drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);});
-canvas.addEventListener(‘mousemove’,e=>{if(!drawing)return;const p=pos(e);ctx.strokeStyle=’#1a1a1a’;ctx.lineWidth=2.5;ctx.lineCap=‘round’;ctx.lineJoin=‘round’;ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);});
-canvas.addEventListener(‘mouseup’,()=>{drawing=false;});
-canvas.addEventListener(‘touchstart’,e=>{e.preventDefault();drawing=true;const p=pos(e);ctx.beginPath();ctx.moveTo(p.x,p.y);},{passive:false});
-canvas.addEventListener(‘touchmove’,e=>{if(!drawing)return;e.preventDefault();const p=pos(e);ctx.strokeStyle=’#1a1a1a’;ctx.lineWidth=2.5;ctx.lineCap=‘round’;ctx.lineJoin=‘round’;ctx.lineTo(p.x,p.y);ctx.stroke();ctx.beginPath();ctx.moveTo(p.x,p.y);},{passive:false});
-canvas.addEventListener(‘touchend’,()=>{drawing=false;});
-}
-function clearClientCanvas(){const c=document.getElementById(‘clientOnlyCanvas’);c.getContext(‘2d’).clearRect(0,0,c.width,c.height);}
-
-function doClientSubmit(){
-const canvas=document.getElementById(‘clientOnlyCanvas’);
-if(isCanvasBlank(canvas)){document.getElementById(‘clientNoSigWarn’).style.display=‘block’;return;}
-document.getElementById(‘clientNoSigWarn’).style.display=‘none’;
-_clientSigData=canvasToWhitePNG(canvas);
-// Generate PDF silently (don’t save yet)
-_clientPdfDoc=buildClientPDF(_clientPayload,_clientSigData);
-// Switch button to share mode
-doClientShare();
-}
-
-function doClientShare(){
-if(!_clientSigData){doClientSubmit();return;}
-
-const payload=_clientPayload;
-const fields=payload.fields||{};
-const catName=CATS[payload.cat]?.name||‘Agreement’;
-const clientN=fields.clientName||‘Client’;
-
-// Save PDF so they can attach it
-if(_clientPdfDoc){_clientPdfDoc.save(`signed_${payload.cat}_${clientN.replace(/\s+/g,'_')}.pdf`);}
-
-const title=`Signed: ${catName} — ${clientN}`;
-const msg=`Hi, please find my signed copy of the ${catName} attached.\n\nSigned by: ${clientN}\nDate: ${fmtDate(todayISO())}\n\n(Attach the PDF that just downloaded)`;
-
-function unlock(){
-const dlBtn=document.getElementById(‘clientDlBtn’);
-const hint=document.getElementById(‘clientHint’);
-const sendBtn=document.getElementById(‘clientSendBtn’);
-if(dlBtn){dlBtn.disabled=false;dlBtn.classList.add(‘unlocked’);}
-if(hint){hint.textContent=‘✓ Sent — your download is now unlocked’;hint.style.color=‘var(–accent)’;}
-if(sendBtn){
-sendBtn.innerHTML=’<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>  Sent’;
-sendBtn.style.background=‘var(–surface)’;sendBtn.style.color=‘var(–text)’;sendBtn.style.border=‘1px solid var(–border)’;
-sendBtn.onclick=null;
-}
-showToast(‘Download unlocked’);
-}
-
-if(navigator.share){
-navigator.share({title,text:msg}).then(unlock).catch(e=>{if(e.name!==‘AbortError’)unlock();});
-} else {
-const sub=encodeURIComponent(title);
-const body=encodeURIComponent(msg);
-window.open(`mailto:${payload.yourEmail||''}?subject=${sub}&body=${body}`);
-setTimeout(unlock,1500);
-}
-}
-
-function doClientDownload(){
-if(_clientPdfDoc){_clientPdfDoc.save(`signed_${_clientPayload.cat}_${(_clientPayload.fields?.clientName||'client').replace(/\s+/g,'_')}.pdf`);showToast(‘Downloaded’);}
-}
-
-function buildClientPDF(payload,clientSigData){
-const{jsPDF}=window.jspdf;
-const doc=new jsPDF({orientation:‘portrait’,unit:‘mm’,format:‘a4’});
-const W=210,H=297,mg=20,cW=W-mg*2;let y=0;
-const fields=payload.fields||{};
-const biz=payload.bizName||fields.yourName||‘Simple Sign’;
-const clientN=fields.clientName||’’;const yourN=fields.yourName||’’;
-const dateStr=fields.docDate||’’;const catName=CATS[payload.cat]?.name||‘Agreement’;
-const[ar,ag,ab]=hexToRgbArr(payload.accentColor||’#c8a96e’);
-const[bgr,bgg,bgb]=hexToRgbArr(payload.bgColor||’#0a0a0a’);
-doc.setFillColor(bgr,bgg,bgb);doc.rect(0,0,W,32,‘F’);
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(17);doc.setTextColor(240,236,228);doc.text(‘simplesign’,mg,14);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(8);doc.setTextColor(ar,ag,ab);doc.text(biz.toUpperCase(),mg,21);
-doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(catName.toUpperCase(),W-mg,13,{align:‘right’});doc.text(fmtDate(dateStr),W-mg,20,{align:‘right’});
-doc.setFillColor(ar,ag,ab);doc.rect(0,32,W,1.5,‘F’);y=42;
-doc.setFillColor(247,246,244);doc.roundedRect(mg,y,cW,20,2,2,‘F’);
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(‘PARTY A’,mg+6,y+7);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(10);doc.setTextColor(28,26,24);doc.text(yourN||’—’,mg+6,y+15);
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(‘PARTY B’,W/2+4,y+7);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(10);doc.setTextColor(28,26,24);doc.text(clientN||’—’,W/2+4,y+15);
-doc.setDrawColor(210,208,205);doc.setLineWidth(0.4);doc.line(W/2,y+4,W/2,y+16);y+=28;
-y=renderBodyFromPayload(doc,y,mg,cW,W,[ar,ag,ab],payload);
-y=Math.max(y+12,H-72);
-doc.setDrawColor(200,198,195);doc.setLineWidth(0.3);doc.line(mg,y,W-mg,y);y+=7;
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(‘SIGNATURES’,mg,y);y+=7;
-const sW=(cW-10)/2;
-try{doc.addImage(clientSigData,‘PNG’,mg+sW+10,y,sW,16);}catch(e){}
-y+=18;doc.setDrawColor(28,26,24);doc.setLineWidth(0.5);
-doc.line(mg,y,mg+sW,y);doc.line(mg+sW+10,y,W-mg,y);y+=4;
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(8);doc.setTextColor(140,135,130);
-doc.text(yourN||‘Authorized Party’,mg,y);doc.text(clientN||‘Client’,mg+sW+10,y);y+=4;doc.setFontSize(7);
-doc.text(’Date: ’+fmtDate(dateStr),mg,y);doc.text(’Date: ’+fmtDate(todayISO()),mg+sW+10,y);
-doc.setFillColor(bgr,bgg,bgb);doc.rect(0,H-10,W,10,‘F’);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(7);doc.setTextColor(100,95,90);
-doc.text(’Generated by Simple Sign  •  ’+fmtDate(dateStr),W/2,H-4,{align:‘center’});
-return doc;
-}
-
-function renderBodyFromPayload(doc,y,mg,cW,W,acc,payload){
-const fields=payload.fields||{},lines=payload.lines||[],cat=payload.cat;
-const light=[247,246,244],dark=[28,26,24],muted=[140,135,130];
-function section(title){doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(…muted);doc.text(title.toUpperCase(),mg,y);y+=2;doc.setDrawColor(210,208,205);doc.setLineWidth(0.3);doc.line(mg,y,W-mg,y);y+=7;}
-function row(label,value){if(y>245)return;doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(8);doc.setTextColor(…muted);doc.text(label,mg,y);doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(10);doc.setTextColor(…dark);const ls=doc.splitTextToSize(value||’—’,cW-65);doc.text(ls,mg+65,y);y+=Math.max(ls.length*5,7);}
-function block(label,text){if(y>230)return;doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(…muted);doc.text(label.toUpperCase(),mg,y);y+=5;doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(9);doc.setTextColor(…dark);const ls=doc.splitTextToSize(text||’—’,cW);doc.text(ls,mg,y);y+=ls.length*5+7;}
-if(cat===‘car’){section(‘Vehicle Information’);row(‘Vehicle’,fields.carMake);row(‘Plate’,fields.carPlate);row(‘Pickup’,fmtDate(fields.carPickup));row(‘Return’,fmtDate(fields.carReturn));row(‘Mileage Out’,fields.carMileageOut);row(‘Daily Rate’,’$’+fields.carRate);row(‘Deposit’,’$’+fields.carDeposit);y+=4;block(‘Terms’,fields.carTerms);}
-else if(cat===‘barber’){section(‘Booth Agreement’);row(‘Station’,fields.barberStation);row(‘Weekly Rent’,’$’+fields.barberRate);row(‘Start Date’,fmtDate(fields.barberStartDate));row(‘Schedule’,fields.barberSchedule);y+=4;block(‘Terms’,fields.barberTerms);}
-else if(cat===‘photo’){section(‘Project Details’);row(‘Service’,fields.photoType);row(‘Shoot Date’,fmtDate(fields.photoDate));row(‘Location’,fields.photoLocation);row(‘Coverage’,fields.photoHours);row(‘Deliverables’,fields.photoDeliverables);row(‘Delivery’,fields.photoDelivery);row(‘Usage Rights’,fields.photoUsage);y+=4;section(‘Financials’);row(‘Total Rate’,’$’+fields.photoRate);row(‘Deposit’,’$’+fields.photoDeposit);const bal=(parseFloat(fields.photoRate)||0)-(parseFloat(fields.photoDeposit)||0);row(‘Balance Due’,’$’+bal.toFixed(2));y+=4;block(‘Terms’,fields.photoTerms);}
-else if(cat===‘nda’){section(‘Non-Disclosure Agreement’);row(‘Purpose’,fields.ndaPurpose);row(‘Duration’,fields.ndaDuration);row(‘Jurisdiction’,fields.ndaJurisdiction);y+=4;block(‘Confidential Info’,fields.ndaScope);block(‘Exclusions’,fields.ndaExclusions);}
-else if(cat===‘invoice’||cat===‘receipt’){const lbl=cat===‘invoice’?‘Invoice’:‘Receipt’;section(lbl+’ Details’);row(lbl+’ #’,fields.invNumber);row(cat===‘invoice’?‘Due Date’:‘Payment Date’,fmtDate(fields.invDue));row(‘Notes’,fields.invNotes);y+=4;doc.setFillColor(28,26,24);doc.rect(mg,y,cW,8,‘F’);doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(8);doc.setTextColor(240,236,228);doc.text(‘DESCRIPTION’,mg+4,y+5.5);doc.text(‘AMOUNT’,W-mg-4,y+5.5,{align:‘right’});y+=9;let total=0;lines.forEach((li,i)=>{const p=parseFloat(li.p)||0;total+=p;if(i%2===0){doc.setFillColor(…light);doc.rect(mg,y-1,cW,8,‘F’);}doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(9);doc.setTextColor(…dark);doc.text(li.d||’—’,mg+4,y+4.5);doc.text(’$’+p.toFixed(2),W-mg-4,y+4.5,{align:‘right’});y+=8;});y+=2;doc.setFillColor(…acc);doc.rect(mg,y,cW,10,‘F’);doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(10);doc.setTextColor(28,26,24);doc.text(‘TOTAL’,mg+4,y+7);doc.text(’$’+total.toFixed(2),W-mg-4,y+7,{align:‘right’});y+=14;}
-return y;
-}
-
-// ── PDF (your own copy) ──
-function fmtDate(s){if(!s)return’—’;try{const[y,m,d]=s.split(’-’);return[‘Jan’,‘Feb’,‘Mar’,‘Apr’,‘May’,‘Jun’,‘Jul’,‘Aug’,‘Sep’,‘Oct’,‘Nov’,‘Dec’][parseInt(m)-1]+’ ‘+parseInt(d)+’, ‘+y;}catch{return s;}}
-function generatePDF(){
-const{jsPDF}=window.jspdf;
-const doc=new jsPDF({orientation:‘portrait’,unit:‘mm’,format:‘a4’});
-const W=210,H=297,mg=20,cW=W-mg*2;let y=0;
-const biz=S.bizName||V(‘yourName’)||‘Simple Sign’;
-const clientN=V(‘clientName’),yourN=V(‘yourName’),dateStr=V(‘docDate’),catName=CATS[category].name;
-const[ar,ag,ab]=hexToRgbArr(S.accentColor);const[bgr,bgg,bgb]=hexToRgbArr(S.bgColor);
-doc.setFillColor(bgr,bgg,bgb);doc.rect(0,0,W,32,‘F’);
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(17);doc.setTextColor(240,236,228);doc.text(‘simplesign’,mg,14);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(8);doc.setTextColor(ar,ag,ab);doc.text(biz.toUpperCase(),mg,21);
-doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(catName.toUpperCase(),W-mg,13,{align:‘right’});doc.text(fmtDate(dateStr),W-mg,20,{align:‘right’});
-doc.setFillColor(ar,ag,ab);doc.rect(0,32,W,1.5,‘F’);y=42;
-doc.setFillColor(247,246,244);doc.roundedRect(mg,y,cW,20,2,2,‘F’);
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(‘PARTY A’,mg+6,y+7);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(10);doc.setTextColor(28,26,24);doc.text(yourN||’—’,mg+6,y+15);
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(‘PARTY B’,W/2+4,y+7);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(10);doc.setTextColor(28,26,24);doc.text(clientN||’—’,W/2+4,y+15);
-doc.setDrawColor(210,208,205);doc.setLineWidth(0.4);doc.line(W/2,y+4,W/2,y+16);y+=28;
-y=renderBody(doc,y,mg,cW,W,[ar,ag,ab]);
-y=Math.max(y+12,H-72);
-doc.setDrawColor(200,198,195);doc.setLineWidth(0.3);doc.line(mg,y,W-mg,y);y+=7;
-doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(140,135,130);doc.text(‘SIGNATURES’,mg,y);y+=7;
-const sW=(cW-10)/2;
-if(usingDefaultSig&&S.defaultSigData){try{doc.addImage(S.defaultSigData,‘PNG’,mg,y,sW,16);}catch(e){}}
-else{const yc=document.getElementById(‘yourSigCanvas’);if(!isCanvasBlank(yc)){try{doc.addImage(canvasToWhitePNG(yc),‘PNG’,mg,y,sW,16);}catch(e){}}}
-const cc=document.getElementById(‘clientSigCanvas’);
-if(!isCanvasBlank(cc)){try{doc.addImage(canvasToWhitePNG(cc),‘PNG’,mg+sW+10,y,sW,16);}catch(e){}}
-y+=18;doc.setDrawColor(28,26,24);doc.setLineWidth(0.5);doc.line(mg,y,mg+sW,y);doc.line(mg+sW+10,y,W-mg,y);y+=4;
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(8);doc.setTextColor(140,135,130);
-doc.text(yourN||‘Authorized Party’,mg,y);doc.text(clientN||‘Client’,mg+sW+10,y);y+=4;doc.setFontSize(7);
-doc.text(’Date: ’+fmtDate(dateStr),mg,y);doc.text(’Date: ’+fmtDate(dateStr),mg+sW+10,y);
-doc.setFillColor(bgr,bgg,bgb);doc.rect(0,H-10,W,10,‘F’);
-doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(7);doc.setTextColor(100,95,90);
-doc.text(’Generated by Simple Sign  •  ’+fmtDate(dateStr),W/2,H-4,{align:‘center’});
-doc.save(`${category}_${(clientN||'client').replace(/\s+/g,'_')}_${dateStr}.pdf`);
-showToast(‘PDF downloaded’);
-}
-
-function renderBody(doc,y,mg,cW,W,acc){
-const light=[247,246,244],dark=[28,26,24],muted=[140,135,130];
-function section(title){doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(…muted);doc.text(title.toUpperCase(),mg,y);y+=2;doc.setDrawColor(210,208,205);doc.setLineWidth(0.3);doc.line(mg,y,W-mg,y);y+=7;}
-function row(label,value){if(y>245)return;doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(8);doc.setTextColor(…muted);doc.text(label,mg,y);doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(10);doc.setTextColor(…dark);const lines=doc.splitTextToSize(value||’—’,cW-65);doc.text(lines,mg+65,y);y+=Math.max(lines.length*5,7);}
-function block(label,text){if(y>230)return;doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(7);doc.setTextColor(…muted);doc.text(label.toUpperCase(),mg,y);y+=5;doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(9);doc.setTextColor(…dark);const lines=doc.splitTextToSize(text||’—’,cW);doc.text(lines,mg,y);y+=lines.length*5+7;}
-if(category===‘car’){section(‘Vehicle Information’);row(‘Vehicle’,V(‘carMake’));row(‘License Plate’,V(‘carPlate’));row(‘Pickup Date’,fmtDate(V(‘carPickup’)));row(‘Return Date’,fmtDate(V(‘carReturn’)));row(‘Mileage Out’,V(‘carMileageOut’));row(‘Daily Rate’,’$’+V(‘carRate’));row(‘Security Deposit’,’$’+V(‘carDeposit’));y+=4;block(‘Additional Terms’,V(‘carTerms’));}
-else if(category===‘barber’){section(‘Booth Agreement’);row(‘Station / Booth’,V(‘barberStation’));row(‘Weekly Rent’,’$’+V(‘barberRate’));row(‘Start Date’,fmtDate(V(‘barberStartDate’)));row(‘Schedule’,V(‘barberSchedule’));y+=4;block(‘Terms & Responsibilities’,V(‘barberTerms’));}
-else if(category===‘photo’){section(‘Project Details’);row(‘Service’,V(‘photoType’));row(‘Shoot Date’,fmtDate(V(‘photoDate’)));row(‘Location’,V(‘photoLocation’));row(‘Coverage’,V(‘photoHours’));row(‘Deliverables’,V(‘photoDeliverables’));row(‘Delivery Timeline’,V(‘photoDelivery’));row(‘Usage Rights’,V(‘photoUsage’));y+=4;section(‘Financials’);row(‘Total Rate’,’$’+V(‘photoRate’));row(‘Deposit Paid’,’$’+V(‘photoDeposit’));const bal=(parseFloat(V(‘photoRate’))||0)-(parseFloat(V(‘photoDeposit’))||0);row(‘Balance Due’,’$’+bal.toFixed(2));y+=4;block(‘Additional Terms’,V(‘photoTerms’));}
-else if(category===‘nda’){section(‘Non-Disclosure Agreement’);row(‘Purpose’,V(‘ndaPurpose’));row(‘Duration’,V(‘ndaDuration’));row(‘Jurisdiction’,V(‘ndaJurisdiction’));y+=4;block(‘Confidential Information’,V(‘ndaScope’));block(‘Exclusions’,V(‘ndaExclusions’));doc.setFont(‘helvetica’,‘italic’);doc.setFontSize(8);doc.setTextColor(…muted);const boiler=‘Both parties agree to hold all shared information in strict confidence and not to disclose it to any third party without prior written consent.’;const bl=doc.splitTextToSize(boiler,cW);doc.text(bl,mg,y);y+=bl.length*4.5+6;}
-else if(category===‘invoice’||category===‘receipt’){const lbl=category===‘invoice’?‘Invoice’:‘Receipt’;section(lbl+’ Details’);row(lbl+’ #’,V(‘invNumber’));row(category===‘invoice’?‘Due Date’:‘Payment Date’,fmtDate(V(‘invDue’)));row(‘Notes’,V(‘invNotes’));y+=4;doc.setFillColor(28,26,24);doc.rect(mg,y,cW,8,‘F’);doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(8);doc.setTextColor(240,236,228);doc.text(‘DESCRIPTION’,mg+4,y+5.5);doc.text(‘AMOUNT’,W-mg-4,y+5.5,{align:‘right’});y+=9;const items=document.querySelectorAll(’.line-item’);let total=0;items.forEach((item,i)=>{const desc=item.querySelector(’.li-desc’)?.value||’’;const price=parseFloat(item.querySelector(’.li-price’)?.value)||0;total+=price;if(i%2===0){doc.setFillColor(…light);doc.rect(mg,y-1,cW,8,‘F’);}doc.setFont(‘helvetica’,‘normal’);doc.setFontSize(9);doc.setTextColor(…dark);doc.text(desc||’—’,mg+4,y+4.5);doc.text(’$’+price.toFixed(2),W-mg-4,y+4.5,{align:‘right’});y+=8;});y+=2;doc.setFillColor(…acc);doc.rect(mg,y,cW,10,‘F’);doc.setFont(‘helvetica’,‘bold’);doc.setFontSize(10);doc.setTextColor(28,26,24);doc.text(‘TOTAL’,mg+4,y+7);doc.text(’$’+total.toFixed(2),W-mg-4,y+7,{align:‘right’});y+=14;}
-return y;
-}
-
-// ── TOAST ──
-function showToast(msg){const t=document.getElementById(‘toast’);t.textContent=msg;t.classList.add(‘show’);setTimeout(()=>t.classList.remove(‘show’),2200);}
-
-// ── PWA ──
-if(‘serviceWorker’ in navigator){
-const sw=`const CACHE='ss-v3';self.addEventListener('install',e=>e.waitUntil(caches.open(CACHE).then(c=>c.addAll(['https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap','https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js']).catch(()=>{}))));self.addEventListener('fetch',e=>e.respondWith(caches.match(e.request).then(r=>r||fetch(e.request))));`;
-const blob=new Blob([sw],{type:‘application/javascript’});
-navigator.serviceWorker.register(URL.createObjectURL(blob)).catch(()=>{});
-}
-</script>
-
+    function showToast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      setTimeout(() => t.classList.remove("show"), 2200);
+    }
+  </script>
 </body>
 </html>

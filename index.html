@@ -618,6 +618,12 @@
       });
       return lines;
     }
+    function getSenderSignatureData() {
+      if (usingDefaultSig && S.defaultSigData) return S.defaultSigData;
+      const canvas = document.getElementById("yourSigCanvas");
+      if (canvas && !isCanvasBlank(canvas)) return canvasToWhitePNG(canvas);
+      return "";
+    }
     function shareWithClient() {
       if (!S.email) {
         showToast("Add your email in Settings first");
@@ -625,7 +631,17 @@
         return;
       }
       const fields = collectFields();
-      const payload = { cat: category, fields, lines: collectLines(), yourEmail: S.email, bizName: S.bizName, tagline: S.tagline, accentColor: S.accentColor, bgColor: S.bgColor };
+      const yourSignature = getSenderSignatureData();
+      if (!yourSignature) {
+        showToast("Add your signature before sending");
+        step = 4;
+        showScreen(step);
+        updateNav();
+        updateProgress();
+        buildSigScreen();
+        return;
+      }
+      const payload = { cat: category, fields, lines: collectLines(), yourEmail: S.email, bizName: S.bizName, tagline: S.tagline, accentColor: S.accentColor, bgColor: S.bgColor, yourSignature };
       const encoded = encodePayload(payload);
       const url = `${shareBaseUrl()}?sign=${encoded}`;
       const catName = CATS[category].name;
@@ -718,20 +734,42 @@
       clientPdfDoc = buildPDF(clientPayload, clientSigData, true);
       doClientShare();
     }
-    function doClientShare() {
+    async function doClientShare() {
       if (!clientSigData) return doClientSubmit();
       const fields = clientPayload.fields || {};
       const catName = CATS[clientPayload.cat]?.name || "Agreement";
-      const msg = `Hi, please find my signed copy of the ${catName} attached.\n\nSigned by: ${fields.clientName || "Client"}\nDate: ${fmtDate(todayISO())}\n\nAttach the PDF that just downloaded.`;
-      clientPdfDoc.save(`signed_${clientPayload.cat}_${(fields.clientName || "client").replace(/\s+/g, "_")}.pdf`);
-      if (navigator.share) navigator.share({ title: `Signed: ${catName}`, text: msg }).catch(() => {});
-      else window.location.href = `mailto:${clientPayload.yourEmail || ""}?subject=${encodeURIComponent(`Signed: ${catName}`)}&body=${encodeURIComponent(msg)}`;
+      const fileName = `signed_${clientPayload.cat}_${(fields.clientName || "client").replace(/\s+/g, "_")}.pdf`;
+      const title = `Signed: ${catName}`;
+      const msg = `Hi, please find my signed copy of the ${catName} attached.\n\nSigned by: ${fields.clientName || "Client"}\nDate: ${fmtDate(todayISO())}`;
+      const pdfBlob = clientPdfDoc.output("blob");
+      let sharedPdf = false;
+      let pdfFile = null;
+      if (typeof File !== "undefined") {
+        pdfFile = new File([pdfBlob], fileName, { type: "application/pdf" });
+      }
+      if (pdfFile && navigator.canShare && navigator.canShare({ files: [pdfFile] })) {
+        try {
+          await navigator.share({ title, text: msg, files: [pdfFile] });
+          sharedPdf = true;
+        } catch (e) {
+          if (e.name === "AbortError") return;
+        }
+      }
+      if (!sharedPdf) {
+        clientPdfDoc.save(fileName);
+        const fallbackMsg = `${msg}\n\nA PDF just downloaded. Please attach it to this email before sending.`;
+        if (clientPayload.yourEmail) {
+          window.location.href = `mailto:${clientPayload.yourEmail}?subject=${encodeURIComponent(title)}&body=${encodeURIComponent(fallbackMsg)}`;
+        } else if (navigator.share) {
+          await navigator.share({ title, text: fallbackMsg }).catch(() => {});
+        }
+      }
       const dl = document.getElementById("clientDlBtn");
       dl.disabled = false;
       dl.style.opacity = "1";
       dl.style.cursor = "pointer";
-      document.getElementById("clientHint").textContent = "Sent - your download is unlocked";
-      showToast("Download unlocked");
+      document.getElementById("clientHint").textContent = sharedPdf ? "PDF sent - your download is unlocked" : "PDF downloaded - attach it if your mail app opened";
+      showToast(sharedPdf ? "PDF shared" : "PDF downloaded");
     }
     function doClientDownload() {
       if (clientPdfDoc) clientPdfDoc.save(`signed_${clientPayload.cat}_${(clientPayload.fields?.clientName || "client").replace(/\s+/g, "_")}.pdf`);
@@ -747,7 +785,7 @@
     }
     function generatePDF() {
       const payload = { cat: category, fields: collectFields(), lines: collectLines(), bizName: S.bizName, accentColor: S.accentColor, bgColor: S.bgColor };
-      const yourSig = usingDefaultSig ? S.defaultSigData : (!isCanvasBlank(document.getElementById("yourSigCanvas")) ? canvasToWhitePNG(document.getElementById("yourSigCanvas")) : "");
+      const yourSig = getSenderSignatureData();
       const clientSig = !isCanvasBlank(document.getElementById("clientSigCanvas")) ? canvasToWhitePNG(document.getElementById("clientSigCanvas")) : "";
       const doc = buildPDF(payload, clientSig, false, yourSig);
       doc.save(`${category}_${(V("clientName") || "client").replace(/\s+/g, "_")}_${V("docDate")}.pdf`);
@@ -777,8 +815,13 @@
       doc.setDrawColor(200, 198, 195); doc.line(mg, y, W - mg, y); y += 7;
       doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(140, 135, 130); doc.text("SIGNATURES", mg, y); y += 7;
       const sW = (cW - 10) / 2;
-      if (yourSignature && !clientOnly) doc.addImage(yourSignature, "PNG", mg, y, sW, 16);
-      if (clientSignature) doc.addImage(clientSignature, "PNG", mg + sW + 10, y, sW, 16);
+      const senderSignature = yourSignature || payload.yourSignature || "";
+      if (senderSignature) {
+        try { doc.addImage(senderSignature, "PNG", mg, y, sW, 16); } catch (e) {}
+      }
+      if (clientSignature) {
+        try { doc.addImage(clientSignature, "PNG", mg + sW + 10, y, sW, 16); } catch (e) {}
+      }
       y += 18;
       doc.setDrawColor(28, 26, 24); doc.line(mg, y, mg + sW, y); doc.line(mg + sW + 10, y, W - mg, y); y += 4;
       doc.setFont("helvetica", "normal"); doc.setFontSize(8); doc.setTextColor(140, 135, 130); doc.text(fields.yourName || "Authorized Party", mg, y); doc.text(fields.clientName || "Client", mg + sW + 10, y);
@@ -826,3 +869,4 @@
   </script>
 </body>
 </html>
+

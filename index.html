@@ -223,12 +223,14 @@
     let clientSigData = null;
     let clientPdfDoc = null;
     let settingsScrollY = 0;
+    const signatureStrokes = {};
     const PUBLIC_SHARE_BASE = "https://spjpng.github.io/3sign/";
 
     const DEFAULT_SETTINGS = {
       bizName: "",
       tagline: "",
       defaultSigData: "",
+      defaultSigStrokes: null,
       bgColor: "#0a0a0a",
       accentColor: "#c8a96e",
       email: ""
@@ -266,6 +268,12 @@
     function todayISO() { return new Date().toISOString().split("T")[0]; }
     function V(id) { const el = document.getElementById(id); return el ? (el.value || "") : ""; }
     function money(v) { return "$" + (parseFloat(v) || 0).toFixed(2); }
+    function cloneStrokes(strokes) {
+      return strokes ? JSON.parse(JSON.stringify(strokes)) : null;
+    }
+    function hasStrokes(strokes) {
+      return !!(strokes && strokes.lines && strokes.lines.some(line => line.length > 1));
+    }
     function shareBaseUrl() {
       const isLocal = location.protocol === "file:" || ["127.0.0.1", "localhost"].includes(location.hostname);
       if (isLocal) return PUBLIC_SHARE_BASE;
@@ -349,6 +357,7 @@
       document.body.style.top = `-${settingsScrollY}px`;
       document.getElementById("settingsOverlay").classList.add("open");
       document.body.classList.add("modal-open");
+      if (hasStrokes(S.defaultSigStrokes)) signatureStrokes.settingsSigCanvas = cloneStrokes(S.defaultSigStrokes);
       setTimeout(() => resizeCanvas(document.getElementById("settingsSigCanvas"), S.defaultSigData), 60);
     }
     function closeSettings() {
@@ -384,6 +393,7 @@
         showToast("Draw your signature first");
         return;
       }
+      S.defaultSigStrokes = cloneStrokes(signatureStrokes.settingsSigCanvas);
       S.defaultSigData = canvasToWhitePNG(canvas);
       persist();
       showToast("Signature saved");
@@ -394,15 +404,26 @@
       if (!canvas) return;
       resizeCanvas(canvas);
       let drawing = false;
+      let activeLine = null;
       function pos(e) {
         const r = canvas.getBoundingClientRect();
         const t = e.touches ? e.touches[0] : e;
         return { x: t.clientX - r.left, y: t.clientY - r.top };
       }
+      function ensureStrokeSet() {
+        const r = canvas.getBoundingClientRect();
+        if (!signatureStrokes[id]) signatureStrokes[id] = { w: r.width, h: r.height, lines: [] };
+        signatureStrokes[id].w = r.width;
+        signatureStrokes[id].h = r.height;
+        return signatureStrokes[id];
+      }
       function start(e) {
         e.preventDefault();
         drawing = true;
         const p = pos(e);
+        const strokes = ensureStrokeSet();
+        activeLine = [[Math.round(p.x), Math.round(p.y)]];
+        strokes.lines.push(activeLine);
         const ctx = canvas.getContext("2d");
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
@@ -411,6 +432,7 @@
         if (!drawing) return;
         e.preventDefault();
         const p = pos(e);
+        if (activeLine) activeLine.push([Math.round(p.x), Math.round(p.y)]);
         const ctx = canvas.getContext("2d");
         ctx.strokeStyle = "#1a1a1a";
         ctx.lineWidth = 2.5;
@@ -421,7 +443,7 @@
         ctx.beginPath();
         ctx.moveTo(p.x, p.y);
       }
-      function stop() { drawing = false; }
+      function stop() { drawing = false; activeLine = null; }
       canvas.addEventListener("mousedown", start);
       canvas.addEventListener("mousemove", draw);
       canvas.addEventListener("mouseup", stop);
@@ -438,7 +460,10 @@
       canvas.height = Math.max(1, rect.height * dpr);
       const ctx = canvas.getContext("2d");
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      if (imageData) {
+      const strokes = signatureStrokes[canvas.id];
+      if (hasStrokes(strokes)) {
+        drawStrokes(ctx, strokes, rect.width, rect.height);
+      } else if (imageData) {
         const img = new Image();
         img.onload = () => ctx.drawImage(img, 0, 0, rect.width, rect.height);
         img.src = imageData;
@@ -447,6 +472,7 @@
     function clearCanvas(id) {
       const c = document.getElementById(id);
       if (!c) return;
+      signatureStrokes[id] = null;
       c.getContext("2d").clearRect(0, 0, c.width, c.height);
     }
     function isCanvasBlank(canvas) {
@@ -454,6 +480,33 @@
       const data = canvas.getContext("2d").getImageData(0, 0, canvas.width, canvas.height).data;
       for (let i = 3; i < data.length; i += 4) if (data[i] > 10) return false;
       return true;
+    }
+    function drawStrokes(ctx, strokes, width, height) {
+      if (!hasStrokes(strokes)) return;
+      const sx = width / (strokes.w || width || 1);
+      const sy = height / (strokes.h || height || 1);
+      ctx.strokeStyle = "#1a1a1a";
+      ctx.lineWidth = 2.5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      strokes.lines.forEach(line => {
+        if (!line.length) return;
+        ctx.beginPath();
+        ctx.moveTo(line[0][0] * sx, line[0][1] * sy);
+        line.slice(1).forEach(point => ctx.lineTo(point[0] * sx, point[1] * sy));
+        ctx.stroke();
+      });
+    }
+    function strokesToWhitePNG(strokes) {
+      if (!hasStrokes(strokes)) return "";
+      const flat = document.createElement("canvas");
+      flat.width = 520;
+      flat.height = 150;
+      const ctx = flat.getContext("2d");
+      ctx.fillStyle = "#fff";
+      ctx.fillRect(0, 0, flat.width, flat.height);
+      drawStrokes(ctx, strokes, flat.width, flat.height);
+      return flat.toDataURL("image/png");
     }
     function canvasToWhitePNG(canvas) {
       const maxWidth = 520;
@@ -579,7 +632,7 @@
     function buildSigScreen() {
       const clientName = V("clientName").trim();
       document.getElementById("clientSigLabel").textContent = clientName ? `${clientName}'s Signature` : "Client Signature";
-      document.getElementById("useSavedRow").style.display = S.defaultSigData ? "flex" : "none";
+      document.getElementById("useSavedRow").style.display = (S.defaultSigData || hasStrokes(S.defaultSigStrokes)) ? "flex" : "none";
       document.getElementById("savedSigDisplay").style.display = "none";
       document.getElementById("yourDrawBlock").style.display = "block";
       usingDefaultSig = false;
@@ -592,7 +645,7 @@
       usingDefaultSig = true;
       document.getElementById("yourDrawBlock").style.display = "none";
       document.getElementById("savedSigDisplay").style.display = "block";
-      document.getElementById("savedSigImg").src = S.defaultSigData;
+      document.getElementById("savedSigImg").src = S.defaultSigData || strokesToWhitePNG(S.defaultSigStrokes);
     }
     function clearSavedSigUsed() {
       usingDefaultSig = false;
@@ -626,6 +679,11 @@
       if (canvas && !isCanvasBlank(canvas)) return canvasToWhitePNG(canvas);
       return "";
     }
+    function getSenderSignatureStrokes() {
+      if (usingDefaultSig && hasStrokes(S.defaultSigStrokes)) return cloneStrokes(S.defaultSigStrokes);
+      if (hasStrokes(signatureStrokes.yourSigCanvas)) return cloneStrokes(signatureStrokes.yourSigCanvas);
+      return null;
+    }
     function shareWithClient() {
       if (!S.email) {
         showToast("Add your email in Settings first");
@@ -633,8 +691,8 @@
         return;
       }
       const fields = collectFields();
-      const yourSignature = getSenderSignatureData();
-      if (!yourSignature) {
+      const yourSignatureStrokes = getSenderSignatureStrokes();
+      if (!yourSignatureStrokes) {
         showToast("Add your signature before sending");
         step = 4;
         showScreen(step);
@@ -643,11 +701,11 @@
         buildSigScreen();
         return;
       }
-      const payload = { cat: category, fields, lines: collectLines(), yourEmail: S.email, bizName: S.bizName, tagline: S.tagline, accentColor: S.accentColor, bgColor: S.bgColor, yourSignature };
+      const payload = { cat: category, fields, lines: collectLines(), yourEmail: S.email, bizName: S.bizName, tagline: S.tagline, accentColor: S.accentColor, bgColor: S.bgColor, yourSignatureStrokes };
       const encoded = encodePayload(payload);
-      const openUrl = `${shareBaseUrl()}?code=1`;
+      const url = `${shareBaseUrl()}?sign=${encoded}`;
       const catName = CATS[category].name;
-      const msg = `Hi ${fields.clientName || "there"}, ${fields.yourName || S.bizName || "your contact"} sent you a ${catName} to sign.\n\nOpen this link:\n${openUrl}\n\nThen paste this signing code:\n${encoded}`;
+      const msg = `Hi ${fields.clientName || "there"}, ${fields.yourName || S.bizName || "your contact"} sent you a ${catName} to sign:\n${url}`;
       if (navigator.share) {
         navigator.share({ title: `${catName} - Please Sign`, text: msg }).catch(() => copyMsg(msg));
       } else {
@@ -858,7 +916,7 @@
       doc.setDrawColor(200, 198, 195); doc.line(mg, y, W - mg, y); y += 7;
       doc.setFont("helvetica", "bold"); doc.setFontSize(7); doc.setTextColor(140, 135, 130); doc.text("SIGNATURES", mg, y); y += 7;
       const sW = (cW - 10) / 2;
-      const senderSignature = yourSignature || payload.yourSignature || "";
+      const senderSignature = yourSignature || payload.yourSignature || strokesToWhitePNG(payload.yourSignatureStrokes) || "";
       if (senderSignature) {
         try { doc.addImage(senderSignature, "PNG", mg, y, sW, 16); } catch (e) {}
       }
@@ -912,5 +970,6 @@
   </script>
 </body>
 </html>
+
 
 

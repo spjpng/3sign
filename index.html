@@ -456,13 +456,15 @@
       return true;
     }
     function canvasToWhitePNG(canvas) {
+      const maxWidth = 520;
+      const scale = Math.min(1, maxWidth / canvas.width);
       const flat = document.createElement("canvas");
-      flat.width = canvas.width;
-      flat.height = canvas.height;
+      flat.width = Math.max(1, Math.round(canvas.width * scale));
+      flat.height = Math.max(1, Math.round(canvas.height * scale));
       const ctx = flat.getContext("2d");
       ctx.fillStyle = "#fff";
       ctx.fillRect(0, 0, flat.width, flat.height);
-      ctx.drawImage(canvas, 0, 0);
+      ctx.drawImage(canvas, 0, 0, flat.width, flat.height);
       return flat.toDataURL("image/png");
     }
 
@@ -643,11 +645,11 @@
       }
       const payload = { cat: category, fields, lines: collectLines(), yourEmail: S.email, bizName: S.bizName, tagline: S.tagline, accentColor: S.accentColor, bgColor: S.bgColor, yourSignature };
       const encoded = encodePayload(payload);
-      const url = `${shareBaseUrl()}?sign=${encoded}`;
+      const openUrl = `${shareBaseUrl()}?code=1`;
       const catName = CATS[category].name;
-      const msg = `Hi ${fields.clientName || "there"}, ${fields.yourName || S.bizName || "your contact"} sent you a ${catName} to sign.\n\nTap to open and sign:\n${url}`;
+      const msg = `Hi ${fields.clientName || "there"}, ${fields.yourName || S.bizName || "your contact"} sent you a ${catName} to sign.\n\nOpen this link:\n${openUrl}\n\nThen paste this signing code:\n${encoded}`;
       if (navigator.share) {
-        navigator.share({ title: `${catName} - Please Sign`, text: msg, url }).catch(() => copyMsg(msg));
+        navigator.share({ title: `${catName} - Please Sign`, text: msg }).catch(() => copyMsg(msg));
       } else {
         copyMsg(msg);
       }
@@ -658,7 +660,12 @@
     }
 
     function checkClientMode() {
-      const signData = new URLSearchParams(window.location.search).get("sign");
+      const params = new URLSearchParams(window.location.search);
+      if (params.get("code") === "1") {
+        showCodeImport();
+        return true;
+      }
+      const signData = params.get("sign");
       if (!signData) return false;
       const legacyRaw = localStorage.getItem(`ss_doc_${signData}`);
       try {
@@ -672,6 +679,42 @@
       applyTheme();
       showClientView(clientPayload);
       return true;
+    }
+    function showCodeImport(errorText = "") {
+      const wrap = document.getElementById("clientWrap");
+      wrap.classList.add("active");
+      document.getElementById("appHeader").style.display = "none";
+      document.getElementById("appProgress").style.display = "none";
+      document.getElementById("appMain").style.display = "none";
+      document.getElementById("bottomNav").style.display = "none";
+      wrap.innerHTML = `<div style="padding:26px 20px 120px;min-height:100dvh;background:var(--bg);">
+        <div class="logo" style="margin-bottom:26px;">simple<span class="bp-accent">sign</span></div>
+        <p class="step-label">Client Signing</p>
+        <h1 class="step-title">Paste your signing code.</h1>
+        <div class="field-group">
+          <label class="field-label" for="signCodeInput">Signing Code</label>
+          <textarea class="field-textarea" id="signCodeInput" style="min-height:170px;" placeholder="Paste the code from the message"></textarea>
+        </div>
+        <button class="btn-primary" type="button" onclick="openSigningCode()">Open Agreement</button>
+        ${errorText ? `<div style="color:var(--danger);font-size:12px;text-align:center;margin-top:12px;">${errorText}</div>` : ""}
+      </div>`;
+    }
+    function openSigningCode() {
+      const code = (document.getElementById("signCodeInput")?.value || "").trim().replace(/\s+/g, "");
+      if (!code) {
+        showCodeImport("Paste the signing code first.");
+        return;
+      }
+      try {
+        clientPayload = decodePayload(code);
+      } catch (e) {
+        showCodeImport("That code could not be read. Copy the whole code and try again.");
+        return;
+      }
+      if (clientPayload.accentColor) S.accentColor = clientPayload.accentColor;
+      if (clientPayload.bgColor) S.bgColor = clientPayload.bgColor;
+      applyTheme();
+      showClientView(clientPayload);
     }
     function showClientError() {
       document.getElementById("clientWrap").classList.add("active");
@@ -869,4 +912,5 @@
   </script>
 </body>
 </html>
+
 
